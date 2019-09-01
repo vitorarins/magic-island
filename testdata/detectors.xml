@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <soap:Body>
+    <GetCPStateResponse xmlns="http://elecline.com/ELAS">
+      <GetCPStateResult>ASNoError</GetCPStateResult>
+      <Rep>
+        <ECReply>
+          <Zones>
+            <PartAssociationCSV>0</PartAssociationCSV>
+            <ID>0</ID>
+            <Name>1 Voordeur</Name>
+            <ZoneType>Unknown</ZoneType>
+            <Status>Off</Status>
+            <Trouble>false</Trouble>
+            <Part>F</Part>
+            <RegDevSN>2</RegDevSN>
+          </Zones>
+          <Zones>
+            <PartAssociationCSV>0</PartAssociationCSV>
+            <ID>1</ID>
+            <Name>2 Meterkast</Name>
+            <ZoneType>Unknown</ZoneType>
+            <Status>Off</Status>
+            <Trouble>false</Trouble>
+            <Part>F</Part>
+            <RegDevSN>2</RegDevSN>
+          </Zones>
+          <Zones>
+            <PartAssociationCSV>0</PartAssociationCSV>
+            <ID>2</ID>
+            <Name>3 Hal Pir</Name>
+            <ZoneType>Unknown</ZoneType>
+            <Status>Off</Status>
+            <Trouble>false</Trouble>
+            <Part>F</Part>
+            <RegDevSN>2</RegDevSN>
+          </Zones>
+          <Zones>
+            <PartAssociationCSV>0</PartAssociationCSV>
+            <ID>3</ID>
+            <Name>4 Hal Rook</Name>
+            <ZoneType>Unknown</ZoneType>
+            <Status>Off</Status>
+            <Trouble>false</Trouble>
+            <Part>F</Part>
+            <RegDevSN>2</RegDevSN>
+          </Zones>
+          <Zones>
+            <PartAssociationCSV>0</PartAssociationCSV>
+            <ID>4</ID>
+            <Name>5 Woonkamer Pir</Name>
+            <ZoneType>Unknown</ZoneType>
+            <Status>Off</Status>
+            <Trouble>false</Trouble>
+            <Part>F</Part>
+            <RegDevSN>2</RegDevSN>
+          </Zones>
+          <Zones>
+            <PartAssociationCSV>0</PartAssociationCSV>
+            <ID>5</ID>
+            <Name>6 Keukendeur</Name>
+            <ZoneType>Unknown</ZoneType>
+            <Status>Off</Status>
+            <Trouble>false</Trouble>
+            <Part>F</Part>
+            <RegDevSN>2</RegDevSN>
+          </Zones>
+          <Zones>
+            <PartAssociationCSV>0</PartAssociationCSV>
+            <ID>6</ID>
+            <Name>7 Balkondeur</Name>
+            <ZoneType>Unknown</ZoneType>
+            <Status>Off</Status>
+            <Trouble>false</Trouble>
+            <Part>F</Part>
+            <RegDevSN>2</RegDevSN>
+          </Zones>
+          <Users>
+            <PartAssociationCSV>0</PartAssociationCSV>
+            <ID>0</ID>
+            <Name>Gebruiker 00</Name>
+            <UserType>GRAND_08</UserType>
+            <PassCode />
+            <Part>F</Part>
+          </Users>
+          <Users>
+            <ID>1</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>2</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>3</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>4</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>5</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>6</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>7</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>8</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>9</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>10</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>11</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>12</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>13</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>14</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>15</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>16</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>17</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>18</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>19</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>20</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>21</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>22</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>23</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>24</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>25</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>26</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>27</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>28</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>29</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <ID>30</ID>
+            <UserType>UserTypeNotSet</UserType>
+            <PassCode />
+            <Part>No</Part>
+          </Users>
+          <Users>
+            <PartAssociationCSV>0</PartAssociationCSV>
+            <ID>31</ID>
+            <Name>Gebruiker 31</Name>
+            <UserType>DURESS_0D</UserType>
+            <PassCode />
+            <Part>F</Part>
+          </Users>
+          <SysStat>Disarmed</SysStat>
+          <SystemReady>true</SystemReady>
+          <Trouble>false</Trouble>
+          <BellStat>0</BellStat>
+          <AlmPend>false</AlmPend>
+          <BatLow>false</BatLow>
+          <AcLost>false</AcLost>
+          <HAEnabled>false</HAEnabled>
+          <ChimeStatus>false</ChimeStatus>
+          <LogCleared>false</LogCleared>
+          <BellOn>false</BellOn>
+          <DevCollection>
+            <DevType>21</DevType>
+            <DevList>
+              <TCPDevice>
+                <Num>0</Num>
+                <Desc>Het Alarmsysteem</Desc>
+              </TCPDevice>
+            </DevList>
+          </DevCollection>
+          <DevCollection>
+            <DevType>1000</DevType>
+            <DevList>
+              <TCPDevice>
+                <Num>0</Num>
+                <Desc>22400428070</Desc>
+              </TCPDevice>
+            </DevList>
+          </DevCollection>
+          <ExitDelayTO>0</ExitDelayTO>
+          <Partitions>
+            <ID>0</ID>
+            <ArmedState>Disarm</ArmedState>
+            <ReadyState>AwayReady</ReadyState>
+            <AlarmState>NoAlarm</AlarmState>
+          </Partitions>
+          <ArmNotAllowed>false</ArmNotAllowed>
+          <DisarmNotAllowed>false</DisarmNotAllowed>
+        </ECReply>
+        <CPTime>2019-07-28T00:20:48.5290323+00:00</CPTime>
+        <partReadySupported>false</partReadySupported>
+        <partFullReady>false</partFullReady>
+        <part1Ready>false</part1Ready>
+        <part2Ready>false</part2Ready>
+      </Rep>
+    </GetCPStateResponse>
+  </soap:Body>
+</soap:Envelope>
