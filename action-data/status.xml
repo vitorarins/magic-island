@@ -1,0 +1,12 @@
+<v:Envelope xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns:d="http://www.w3.org/2001/XMLSchema" xmlns:c="http://www.w3.org/2003/05/soap-encoding" xmlns:v="http://www.w3.org/2003/05/soap-envelope">
+  <v:Header />
+  <v:Body>
+    <GetCPEventLogExWithPaging xmlns="http://elecline.com/ELAS" id="o0" c:root="1">
+      <PassCode>{{ .PassCode }}</PassCode>
+      <langID>en-us</langID>
+      <dtNewerThan>2019-08-01T22:30:00</dtNewerThan>
+      <offset>0</offset>
+      <count>100</count>
+    </GetCPEventLogExWithPaging>
+  </v:Body>
+</v:Envelope>

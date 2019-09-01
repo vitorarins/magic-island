@@ -1,0 +1,18 @@
+<v:Envelope xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns:d="http://www.w3.org/2001/XMLSchema" xmlns:c="http://www.w3.org/2003/05/soap-encoding" xmlns:v="http://www.w3.org/2003/05/soap-envelope">
+  <v:Header />
+  <v:Body>
+    <CPPartArm xmlns="http://elecline.com/ELAS" id="o0" c:root="1">
+      <PassCode>{{ .PassCode }}</PassCode>
+      <Partitions>
+        <PartStsOrCtrl>
+          <ID i:type="d:int">0</ID>
+          <ArmedState>Disarm</ArmedState>
+          <ReadyState>AwayReady</ReadyState>
+          <AlarmState>NoAlarm</AlarmState>
+          <Groups i:nil="true" />
+          <ExitDelayTO i:type="d:int">0</ExitDelayTO>
+        </PartStsOrCtrl>
+      </Partitions>
+    </CPPartArm>
+  </v:Body>
+</v:Envelope>

@@ -1,0 +1,8 @@
+<v:Envelope xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns:d="http://www.w3.org/2001/XMLSchema" xmlns:c="http://www.w3.org/2003/05/soap-encoding" xmlns:v="http://www.w3.org/2003/05/soap-envelope">
+  <v:Header />
+  <v:Body>
+    <GetCPState xmlns="http://elecline.com/ELAS" id="o0" c:root="1">
+      <PassCode>{{ .PassCode }}</PassCode>
+    </GetCPState>
+  </v:Body>
+</v:Envelope>
