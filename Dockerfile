@@ -3,7 +3,7 @@ RUN apt-get update && \
     apt-get dist-upgrade -y && \
     apt-get install -y --no-install-recommends ca-certificates tzdata && \
 	update-ca-certificates
-WORKDIR $GOPATH/src/github.com/vitorarins/magic-island/
+WORKDIR /go/src/github.com/vitorarins/magic-island/
 COPY . .
 ENV GO111MODULE=on
 RUN go mod download
@@ -14,7 +14,8 @@ COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
-COPY --from=builder /go/src/github.com/vitorarins/magic-island/action-data .
+WORKDIR /app/
+COPY --from=builder /go/src/github.com/vitorarins/magic-island/action-data ./action-data/
 COPY --from=builder /go/src/github.com/vitorarins/magic-island/app .
 
 ENTRYPOINT ["./app"]
