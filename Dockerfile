@@ -5,6 +5,7 @@ RUN apt-get update && \
 	update-ca-certificates
 WORKDIR $GOPATH/src/github.com/vitorarins/magic-island/
 COPY . .
+ENV GO111MODULE=on
 RUN go mod download
 RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o app .
 
@@ -13,6 +14,7 @@ COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
-COPY --from=builder /go/src/github.com/vitorarins/magic-island/ .
+COPY --from=builder /go/src/github.com/vitorarins/magic-island/action-data .
+COPY --from=builder /go/src/github.com/vitorarins/magic-island/app .
 
 ENTRYPOINT ["./app"]
