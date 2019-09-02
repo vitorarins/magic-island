@@ -1,11 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/alecthomas/kingpin"
 	"log"
+	"net/http"
 	"os"
 	"runtime"
-	"time"
 )
 
 var (
@@ -13,6 +14,7 @@ var (
 	goVersion = runtime.Version()
 
 	// flags
+	port             = kingpin.Flag("port", "The port to be allocated for this http service.").Default("8080").Envar("PORT").String()
 	actionsLocation  = kingpin.Flag("actions-location", "The location where to get data for actions against APIs.").Default("action-data").Envar("ACTIONS_LOCATION").String()
 	feenstraPassCode = kingpin.Flag("pass-code", "Pass code used for Feenstra system.").Envar("PASS_CODE").Required().String()
 	feenstraKey      = kingpin.Flag("feenstra-key", "Key used for requests against Feenstra sytem.").Envar("FEENSTRA_KEY").Required().String()
@@ -42,8 +44,11 @@ func main() {
 
 	requester := NewRequester(*actionsLocation, *feenstraPassCode, *feenstraKey, *makerKey)
 
-	for {
-		ManageDectetorsAlert(statusDir, requester)
-		time.Sleep(1 * time.Second)
-	}
+	http.HandleFunc("/", indexHandler)
+
+	log.Println("Managing Detectors Alert")
+	go ManageDectetorsAlert(statusDir, requester)
+
+	log.Printf("Listening on port %s", *port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", *port), nil))
 }

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
+	"time"
 )
 
 type Zone struct {
@@ -46,33 +47,37 @@ func writeStatusFile(content, filename string) error {
 }
 
 func ManageDectetorsAlert(detectorStatusDir string, requester Requester) {
-	detectorsXML := requester.RequestFeenstra("get-detectors")
 
-	detectorsList, err := parseDetectors(detectorsXML)
-	if err != nil {
-		log.Printf("Got the following error trying to parse the detectors XML: %s", err)
-		log.Printf("Detectors xml: \n%v", detectorsXML)
-	}
+	for {
+		detectorsXML := requester.RequestFeenstra("get-detectors")
 
-	for _, detector := range detectorsList {
-		detectorSafeName := strings.Replace(detector.Name, " ", "-", -1)
-		detectorStatusFilename := fmt.Sprintf("%s/%s", detectorStatusDir, detectorSafeName)
-		status, err := ioutil.ReadFile(detectorStatusFilename)
+		detectorsList, err := parseDetectors(detectorsXML)
 		if err != nil {
-			log.Println("Error reading status file:", err)
+			log.Printf("Got the following error trying to parse the detectors XML: %s", err)
+			log.Printf("Detectors xml: \n%v", detectorsXML)
 		}
-		storedDetectorStatus := string(status)
 
-		if storedDetectorStatus != "" {
-			if storedDetectorStatus != detector.Status {
-				fmt.Printf("Alerting for detector: %s with current status: %s", detectorSafeName, detector.Status)
-				requester.RequestMaker(detectorSafeName, detector.Status)
+		for _, detector := range detectorsList {
+			detectorSafeName := strings.Replace(detector.Name, " ", "-", -1)
+			detectorStatusFilename := fmt.Sprintf("%s/%s", detectorStatusDir, detectorSafeName)
+			status, err := ioutil.ReadFile(detectorStatusFilename)
+			if err != nil {
+				log.Println("Error reading status file:", err)
+			}
+			storedDetectorStatus := string(status)
+
+			if storedDetectorStatus != "" {
+				if storedDetectorStatus != detector.Status {
+					fmt.Printf("Alerting for detector: %s with current status: %s", detectorSafeName, detector.Status)
+					requester.RequestMaker(detectorSafeName, detector.Status)
+				}
+			}
+
+			err = writeStatusFile(detector.Status, detectorStatusFilename)
+			if err != nil {
+				log.Printf("Got the following error trying to write status file: %s", err)
 			}
 		}
-
-		err = writeStatusFile(detector.Status, detectorStatusFilename)
-		if err != nil {
-			log.Printf("Got the following error trying to write status file: %s", err)
-		}
+		time.Sleep(1 * time.Second)
 	}
 }
