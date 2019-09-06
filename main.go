@@ -47,6 +47,7 @@ func main() {
 	handler := NewHandler(requester)
 
 	http.HandleFunc("/", handler.IndexHandler)
+	http.HandleFunc("/alarm/", handler.AlarmHandler)
 
 	log.Println("Managing Detectors Alert")
 	go ManageDectetorsAlert(storer, requester)

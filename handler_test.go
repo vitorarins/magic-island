@@ -21,58 +21,87 @@ func (f *fakeRequester) RequestMaker(detector, status string) string {
 }
 
 func TestIndexHandler(t *testing.T) {
+	tests := []struct {
+		route  string
+		status int
+		body   string
+	}{
+		{
+			route:  "/",
+			status: http.StatusOK,
+			body:   "Matrix",
+		},
+		{
+			route:  "/404",
+			status: http.StatusNotFound,
+			body:   "404 page not found\n",
+		},
+	}
+
 	requester := &fakeRequester{
 		tee: t,
 	}
-
-	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	handler := NewHandler(requester)
-	rr := httptest.NewRecorder()
-	server := http.HandlerFunc(handler.IndexHandler)
-	server.ServeHTTP(rr, req)
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf(
-			"unexpected status: got (%v) want (%v)",
-			status,
-			http.StatusOK,
-		)
-	}
+	for _, test := range tests {
+		req, err := http.NewRequest("GET", test.route, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	expected := "Alarm System"
-	if rr.Body.String() != expected {
-		t.Errorf(
-			"unexpected body: got (%v) want (%v)",
-			rr.Body.String(),
-			expected,
-		)
+		rr := httptest.NewRecorder()
+		server := http.HandlerFunc(handler.IndexHandler)
+		server.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != test.status {
+			t.Errorf("unexpected status: got (%v) want (%v)", status, test.status)
+		}
+
+		if rr.Body.String() != test.body {
+			t.Errorf("unexpected body: got (%v) want (%v)", rr.Body.String(), test.body)
+		}
 	}
 }
 
-func TestIndexHandlerNotFound(t *testing.T) {
+func TestAlarmHandler(t *testing.T) {
+	tests := []struct {
+		route  string
+		status int
+		body   string
+	}{
+		{
+			route:  "/alarm/arm",
+			status: http.StatusOK,
+			body:   "Successfuly executed action arm",
+		},
+		{
+			route:  "/alarm/404",
+			status: http.StatusNotFound,
+			body:   "404 page not found\n",
+		},
+	}
+
 	requester := &fakeRequester{
 		tee: t,
 	}
-
-	req, err := http.NewRequest("GET", "/404", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	handler := NewHandler(requester)
-	rr := httptest.NewRecorder()
-	server := http.HandlerFunc(handler.IndexHandler)
-	server.ServeHTTP(rr, req)
 
-	if status := rr.Code; status != http.StatusNotFound {
-		t.Errorf(
-			"unexpected status: got (%v) want (%v)",
-			status,
-			http.StatusNotFound,
-		)
+	for _, test := range tests {
+		req, err := http.NewRequest("GET", test.route, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rr := httptest.NewRecorder()
+		server := http.HandlerFunc(handler.AlarmHandler)
+		server.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != test.status {
+			t.Errorf("unexpected status: got (%v) want (%v)", status, test.status)
+		}
+
+		if rr.Body.String() != test.body {
+			t.Errorf("unexpected body: got (%v) want (%v)", rr.Body.String(), test.body)
+		}
 	}
 }
