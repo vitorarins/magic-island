@@ -10,7 +10,7 @@ import (
 )
 
 type Zone struct {
-	Id     string `xml:"ID"`
+	Id     int64  `xml:"ID"`
 	Name   string `xml:"Name"`
 	Status string `xml:"Status"`
 }
@@ -46,7 +46,7 @@ func writeStatusFile(content, filename string) error {
 	return nil
 }
 
-func ManageDectetorsAlert(detectorStatusDir string, requester Requester) {
+func ManageDectetorsAlert(storer Storer, requester Requester) {
 
 	for {
 		detectorsXML := requester.RequestFeenstra("get-detectors")
@@ -59,23 +59,19 @@ func ManageDectetorsAlert(detectorStatusDir string, requester Requester) {
 
 		for _, detector := range detectorsList {
 			detectorSafeName := strings.Replace(detector.Name, " ", "-", -1)
-			detectorStatusFilename := fmt.Sprintf("%s/%s", detectorStatusDir, detectorSafeName)
-			status, err := ioutil.ReadFile(detectorStatusFilename)
+			storedDetector, err := storer.GetDetector(detector.Id)
 			if err != nil {
-				log.Println("Error reading status file:", err)
-			}
-			storedDetectorStatus := string(status)
-
-			if storedDetectorStatus != "" {
-				if storedDetectorStatus != detector.Status {
+				log.Printf("Could not read stored status for detector '%v': %v", detector.Id, err)
+			} else {
+				if storedDetector.Status != detector.Status {
 					fmt.Printf("Alerting for detector: %s with current status: %s", detectorSafeName, detector.Status)
 					requester.RequestMaker(detectorSafeName, detector.Status)
 				}
 			}
 
-			err = writeStatusFile(detector.Status, detectorStatusFilename)
+			err = storer.PutDetector(detector.Id, detectorSafeName, detector.Status)
 			if err != nil {
-				log.Printf("Got the following error trying to write status file: %s", err)
+				log.Printf("Got the following error trying to save detector: %s", err)
 			}
 		}
 		time.Sleep(1 * time.Second)

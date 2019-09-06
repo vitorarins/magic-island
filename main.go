@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/alecthomas/kingpin"
 	"log"
 	"net/http"
 	"os"
 	"runtime"
+
+	"cloud.google.com/go/datastore"
+	"github.com/alecthomas/kingpin"
 )
 
 var (
@@ -19,6 +22,7 @@ var (
 	feenstraPassCode = kingpin.Flag("pass-code", "Pass code used for Feenstra system.").Envar("PASS_CODE").Required().String()
 	feenstraKey      = kingpin.Flag("feenstra-key", "Key used for requests against Feenstra sytem.").Envar("FEENSTRA_KEY").Required().String()
 	makerKey         = kingpin.Flag("maker-key", "Key used for requests against IFTT Maker sytem.").Envar("MAKER_KEY").Required().String()
+	datastoreProject = kingpin.Flag("datastore-project", "Id of GCP project of datastore instance.").Envar("DATASTORE_PROJECT_ID").Required().String()
 )
 
 func main() {
@@ -30,24 +34,22 @@ func main() {
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
-	log.Println("Feenstra is up and running...")
+	log.Println("Alarm System is up and running...")
 
-	var statusDir = "status"
-
-	if _, err := os.Stat(statusDir); os.IsNotExist(err) {
-		err := os.Mkdir(statusDir, os.ModePerm)
-		if err != nil {
-			log.Printf("Error creating dir %s: %v\n", statusDir, err)
-			os.Exit(1)
-		}
+	ctx := context.Background()
+	client, err := datastore.NewClient(ctx, *datastoreProject)
+	if err != nil {
+		log.Fatalf("Could not create datastore client: %v", err)
 	}
 
 	requester := NewRequester(*actionsLocation, *feenstraPassCode, *feenstraKey, *makerKey)
+	storer := NewStorer(ctx, client)
+	handler := NewHandler(requester)
 
-	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/", handler.IndexHandler)
 
 	log.Println("Managing Detectors Alert")
-	go ManageDectetorsAlert(statusDir, requester)
+	go ManageDectetorsAlert(storer, requester)
 
 	log.Printf("Listening on port %s", *port)
 	log.Fatal(http.ListenAndServeTLS(fmt.Sprintf(":%s", *port), "server.crt", "server.key", nil))
