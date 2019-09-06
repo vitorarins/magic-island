@@ -8,7 +8,7 @@ import (
 	"os"
 	"runtime"
 
-	"cloud.google.com/go/datastore"
+	"cloud.google.com/go/firestore"
 	"github.com/alecthomas/kingpin"
 )
 
@@ -22,7 +22,7 @@ var (
 	feenstraPassCode = kingpin.Flag("pass-code", "Pass code used for Feenstra system.").Envar("PASS_CODE").Required().String()
 	feenstraKey      = kingpin.Flag("feenstra-key", "Key used for requests against Feenstra sytem.").Envar("FEENSTRA_KEY").Required().String()
 	makerKey         = kingpin.Flag("maker-key", "Key used for requests against IFTT Maker sytem.").Envar("MAKER_KEY").Required().String()
-	datastoreProject = kingpin.Flag("datastore-project", "Id of GCP project of datastore instance.").Envar("DATASTORE_PROJECT_ID").Required().String()
+	firestoreProject = kingpin.Flag("firestore-project", "Id of GCP project of firestore instance.").Envar("FIRESTORE_PROJECT_ID").Required().String()
 )
 
 func main() {
@@ -37,9 +37,9 @@ func main() {
 	log.Println("Alarm System is up and running...")
 
 	ctx := context.Background()
-	client, err := datastore.NewClient(ctx, *datastoreProject)
+	client, err := firestore.NewClient(ctx, *firestoreProject)
 	if err != nil {
-		log.Fatalf("Could not create datastore client: %v", err)
+		log.Fatalf("Could not create firestore client: %v", err)
 	}
 
 	requester := NewRequester(*actionsLocation, *feenstraPassCode, *feenstraKey, *makerKey)

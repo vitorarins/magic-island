@@ -59,7 +59,7 @@ func ManageDectetorsAlert(storer Storer, requester Requester) {
 
 		for _, detector := range detectorsList {
 			detectorSafeName := strings.Replace(detector.Name, " ", "-", -1)
-			storedDetector, err := storer.GetDetector(detector.Id)
+			storedDetector, err := storer.GetDetector(detectorSafeName)
 			if err != nil {
 				log.Printf("Could not read stored status for detector '%v': %v", detector.Id, err)
 			} else {
@@ -69,7 +69,7 @@ func ManageDectetorsAlert(storer Storer, requester Requester) {
 				}
 			}
 
-			err = storer.PutDetector(detector.Id, detectorSafeName, detector.Status)
+			err = storer.PutDetector(detectorSafeName, detector.Status)
 			if err != nil {
 				log.Printf("Got the following error trying to save detector: %s", err)
 			}
