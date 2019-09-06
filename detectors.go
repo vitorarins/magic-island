@@ -30,9 +30,9 @@ func NewStorer(ctx context.Context, client *firestore.Client) Storer {
 // PutDetector adds or updates a detector with the given name and id
 // to the firestore, returning the key of the newly created entity.
 func (s *storerImpl) PutDetector(name, status string) error {
-	detector := &Detector{
-		Name:   name,
-		Status: status,
+	detector := map[string]string{
+		"name":   name,
+		"status": status,
 	}
 
 	_, err := s.client.Collection("detectors").Doc(name).Set(s.ctx, detector, firestore.MergeAll)
