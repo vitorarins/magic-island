@@ -61,7 +61,7 @@ func ManageDectetorsAlert(storer Storer, requester Requester) {
 			detectorSafeName := strings.Replace(detector.Name, " ", "-", -1)
 			storedDetector, err := storer.GetDetector(detectorSafeName)
 			if err != nil {
-				log.Printf("Could not read stored status for detector '%v': %v", detector.Id, err)
+				log.Printf("Could not read stored status for detector '%v': %v", detectorSafeName, err)
 			} else {
 				if storedDetector.Status != detector.Status {
 					fmt.Printf("Alerting for detector: %s with current status: %s", detectorSafeName, detector.Status)
