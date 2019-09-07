@@ -27,7 +27,7 @@ func NewStorer(ctx context.Context, client *firestore.Client) Storer {
 	return &storerImpl{
 		ctx:       ctx,
 		client:    client,
-		detectors: map[string]*Detector{},
+		detectors: make(map[string]*Detector),
 	}
 }
 
@@ -55,21 +55,23 @@ func (s *storerImpl) PutDetector(name, status string) error {
 	return err
 }
 
-func (s *storerImpl) GetDetector(name string) (*Detector, error) {
+func (s *storerImpl) GetDetector(name string) (d *Detector, err error) {
 	if name == "" {
 		return nil, fmt.Errorf("Cannot get detector with empty name")
 	}
 
 	d, ok := s.detectors[name]
 	if !ok {
+		var detector Detector
 		log.Println("Detector not cached, going to firestore...")
 		dsnap, err := s.client.Collection("detectors").Doc(name).Get(s.ctx)
 		if err != nil {
 			return nil, err
 		}
-		dsnap.DataTo(d)
+		dsnap.DataTo(&detector)
+		d = &detector
 		s.detectors[name] = d
 	}
 
-	return d, nil
+	return
 }
