@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/xml"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -62,16 +61,20 @@ func ManageDectetorsAlert(storer Storer, requester Requester) {
 			storedDetector, err := storer.GetDetector(detectorSafeName)
 			if err != nil {
 				log.Printf("Could not read stored status for detector '%v': %v", detectorSafeName, err)
-			} else {
-				if storedDetector.Status != detector.Status {
-					fmt.Printf("Alerting for detector: %s with current status: %s", detectorSafeName, detector.Status)
-					requester.RequestMaker(detectorSafeName, detector.Status)
+				err = storer.PutDetector(detectorSafeName, detector.Status)
+				if err != nil {
+					log.Printf("Got the following error trying to save detector: %s", err)
 				}
+				continue
 			}
 
-			err = storer.PutDetector(detectorSafeName, detector.Status)
-			if err != nil {
-				log.Printf("Got the following error trying to save detector: %s", err)
+			if storedDetector.Status != detector.Status {
+				log.Printf("Alerting for detector: %s with current status: %s", detectorSafeName, detector.Status)
+				requester.RequestMaker(detectorSafeName, detector.Status)
+				err = storer.PutDetector(detectorSafeName, detector.Status)
+				if err != nil {
+					log.Printf("Got the following error trying to save detector: %s", err)
+				}
 			}
 		}
 		time.Sleep(1 * time.Second)
