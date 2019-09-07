@@ -57,9 +57,13 @@ func TestStorer(t *testing.T) {
 			}
 		}
 
-		if _, err := storer.GetDetector(test.name); err != nil {
+		if d, err := storer.GetDetector(test.name); err != nil {
 			if test.getErr != fmt.Sprintf("%v", err) {
 				t.Errorf("unexpected error: got (%v) when getting detector (%v) with status (%v). Maybe it should be (%v)", err, test.name, test.status, test.getErr)
+			}
+		} else {
+			if d.Status != test.status {
+				t.Errorf("unexpected status: got (%v) want (%v)", d.Status, test.status)
 			}
 		}
 	}
