@@ -362,3 +362,49 @@ func TestStatusHandler(t *testing.T) {
 		t.Errorf("unexpected body: got (%v) want (%v)", rr.Body.String(), "OK")
 	}
 }
+
+func TestIFTTTHandler(t *testing.T) {
+	req, err := http.NewRequest("GET", "/ifttt/v1/user/info", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	q := req.URL.Query()
+	q.Add("access_token", globalToken.AccessToken)
+	req.URL.RawQuery = q.Encode()
+
+	rr := httptest.NewRecorder()
+	server := http.HandlerFunc(handler.IFTTTHandler)
+	server.ServeHTTP(rr, req)
+
+	resp := rr.Result()
+	if status := resp.StatusCode; status != http.StatusOK {
+		t.Errorf("unexpected status: got (%v) want (%v)", status, http.StatusOK)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Errorf("Error reading response from ifttt handler: %v", err)
+	}
+
+	var userInfo map[string](map[string]string)
+	err = json.Unmarshal(body, &userInfo)
+	if err != nil {
+		t.Errorf("Error unmarshaling user info: %v", err)
+	}
+
+	userData, ok := userInfo["data"]
+	if !ok {
+		t.Errorf("Could not find data inside user info.")
+	}
+
+	userName, ok := userData["name"]
+	if !ok || userName != "Only user" {
+		t.Errorf("unexpected user data name: got (%v) want (%v)", userName, "Only user")
+	}
+
+	userId, ok := userData["id"]
+	if !ok || userId != "onlyuserwehave" {
+		t.Errorf("unexpected user data id: got (%v) want (%v)", userId, "onlyuserwehave")
+	}
+}

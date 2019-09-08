@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -21,6 +22,7 @@ type Handler interface {
 	AuthorizeHandler(w http.ResponseWriter, r *http.Request)
 	TokenHandler(w http.ResponseWriter, r *http.Request)
 	StatusHandler(w http.ResponseWriter, r *http.Request)
+	IFTTTHandler(w http.ResponseWriter, r *http.Request)
 }
 
 type handlerImpl struct {
@@ -33,6 +35,7 @@ func NewHandler(oauthClientId, oauthClientSecret, domain string, redirectURIs []
 
 	// setup OAuth stuff
 	manager := manage.NewDefaultManager()
+	manager.SetRefreshTokenCfg(&manage.RefreshingConfig{IsGenerateRefresh: true, IsRemoveAccess: true, IsRemoveRefreshing: false})
 	manager.SetValidateURIHandler(func(baseURI string, redirectURI string) (err error) {
 		base, err := url.Parse(baseURI)
 		if err != nil {
@@ -139,4 +142,23 @@ func (h *handlerImpl) TokenHandler(w http.ResponseWriter, r *http.Request) {
 // StatusHandler always responds with 200 OK
 func (h *handlerImpl) StatusHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "OK")
+}
+
+// IFTTTHandler handles every request that is not an action from IFTTT
+func (h *handlerImpl) IFTTTHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := h.srv.ValidationBearerToken(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	data := map[string]interface{}{
+		"data": map[string]string{
+			"name": "Only user",
+			"id":   "onlyuserwehave",
+		},
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(data)
 }
