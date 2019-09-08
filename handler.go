@@ -87,6 +87,7 @@ func NewHandler(oauthClientId, oauthClientSecret, domain string, redirectURIs []
 		requester: requester,
 		srv:       srv,
 		allowedActions: map[string]string{
+			"fullarm": "arm",
 			"arm":     "arm",
 			"partarm": "partarm",
 			"disarm":  "disarm",
