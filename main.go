@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 
 	"cloud.google.com/go/firestore"
 	"github.com/alecthomas/kingpin"
@@ -25,6 +26,7 @@ var (
 	firestoreProject  = kingpin.Flag("firestore-project", "Id of GCP project of firestore instance.").Envar("FIRESTORE_PROJECT_ID").Required().String()
 	oauthClientId     = kingpin.Flag("client-id", "Id of Client to do OAuth.").Envar("OAUTH_CLIENT_ID").Required().String()
 	oauthClientSecret = kingpin.Flag("client-secret", "OAuth server client secret.").Envar("OAUTH_CLIENT_SECRET").Required().String()
+	redirectURIs      = kingpin.Flag("redirect-uris", "Comma separated list of authorized redirect URIs.").Envar("REDIRECT_URIS").String()
 	domain            = kingpin.Flag("domain", "Domain that this application will serve.").Envar("DOMAIN").Required().String()
 )
 
@@ -32,6 +34,7 @@ func main() {
 
 	// parse command line parameters
 	kingpin.Parse()
+	redirectURIList := strings.Split(*redirectURIs, ",")
 
 	// log to stdout and hide timestamp
 	log.SetOutput(os.Stdout)
@@ -48,7 +51,7 @@ func main() {
 	// setup requester, storer and http handler
 	requester := NewRequester(*actionsLocation, *feenstraPassCode, *feenstraKey, *makerKey)
 	storer := NewStorer(ctx, client)
-	handler := NewHandler(*oauthClientId, *oauthClientSecret, *domain, requester)
+	handler := NewHandler(*oauthClientId, *oauthClientSecret, *domain, redirectURIList, requester)
 
 	http.HandleFunc("/authorize", handler.AuthorizeHandler)
 	http.HandleFunc("/token", handler.TokenHandler)

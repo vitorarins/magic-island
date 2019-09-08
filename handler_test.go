@@ -30,11 +30,11 @@ var (
 
 	testOauthClientId     = "222222"
 	testOauthClientSecret = "222222"
-	testDomain            = "magic.com"
-	testRedirectUrl       = "http://test.com/test"
+	testDomain            = "https://magic.com"
+	testRedirectUrl       = "https://redirect.com/test"
 
 	requester = &fakeRequester{}
-	handler   = NewHandler(testOauthClientId, testOauthClientSecret, testDomain, requester)
+	handler   = NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester)
 )
 
 func TestAuthorizeHandler(t *testing.T) {
@@ -77,7 +77,7 @@ func TestAuthorizeHandler(t *testing.T) {
 		{
 			clientId:     testOauthClientId,
 			clientSecret: testOauthClientSecret,
-			redirectUrl:  "http://matrix.com",
+			redirectUrl:  "http://wrong",
 			status:       http.StatusFound,
 			body:         "",
 		},
@@ -175,15 +175,15 @@ func TestTokenHandler(t *testing.T) {
 		{
 			clientId:     testOauthClientId,
 			clientSecret: testOauthClientSecret,
-			redirectUrl:  "http://matrix.com",
+			redirectUrl:  "http://wrong.com",
 			code:         globalCode,
-			status:       http.StatusUnauthorized,
-			body:         `{"error":"invalid_grant","error_description":"The provided authorization grant (e.g., authorization code, resource owner credentials) or refresh token is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client"}` + "\n",
+			status:       http.StatusInternalServerError,
+			body:         `{"error":"server_error","error_description":"The authorization server encountered an unexpected condition that prevented it from fulfilling the request"}` + "\n",
 		},
 		{
 			clientId:     testOauthClientId,
 			clientSecret: testOauthClientSecret,
-			redirectUrl:  "http://matrix.com",
+			redirectUrl:  testRedirectUrl,
 			code:         "randomCode",
 			status:       http.StatusUnauthorized,
 			body:         `{"error":"invalid_grant","error_description":"The provided authorization grant (e.g., authorization code, resource owner credentials) or refresh token is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client"}` + "\n",

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"path"
+	"strings"
 
 	"gopkg.in/oauth2.v3/errors"
 	"gopkg.in/oauth2.v3/manage"
@@ -27,10 +29,30 @@ type handlerImpl struct {
 	srv            *server.Server
 }
 
-func NewHandler(oauthClientId, oauthClientSecret, domain string, requester Requester) Handler {
+func NewHandler(oauthClientId, oauthClientSecret, domain string, redirectURIs []string, requester Requester) Handler {
 
 	// setup OAuth stuff
 	manager := manage.NewDefaultManager()
+	manager.SetValidateURIHandler(func(baseURI string, redirectURI string) (err error) {
+		base, err := url.Parse(baseURI)
+		if err != nil {
+			return
+		}
+		redirect, err := url.Parse(redirectURI)
+		if err != nil {
+			return
+		}
+		if !strings.HasSuffix(redirect.Host, base.Host) {
+			for _, uri := range redirectURIs {
+				if redirectURI == uri {
+					return
+				}
+			}
+			err = errors.ErrInvalidRedirectURI
+		}
+		return
+	})
+
 	// token memory store
 	manager.MustTokenStorage(store.NewMemoryTokenStore())
 	// client memory store
