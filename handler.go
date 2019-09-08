@@ -152,13 +152,18 @@ func (h *handlerImpl) IFTTTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := map[string]interface{}{
-		"data": map[string]string{
-			"name": "Only user",
-			"id":   "onlyuserwehave",
-		},
+	switch requestPath := r.URL.Path; requestPath {
+	case "/ifttt/v1/user/info":
+		data := map[string]interface{}{
+			"data": map[string]string{
+				"name": "Only user",
+				"id":   "onlyuserwehave",
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(data)
+	default:
+		http.NotFound(w, r)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(data)
 }
