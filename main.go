@@ -57,6 +57,7 @@ func main() {
 	http.HandleFunc("/token", handler.TokenHandler)
 	http.HandleFunc("/", handler.IndexHandler)
 	http.HandleFunc("/alarm/", handler.AlarmHandler)
+	http.HandleFunc("/ifttt/v1/actions/", handler.AlarmHandler)
 	http.HandleFunc("/status", handler.StatusHandler)
 
 	log.Println("Managing Detectors Alert")

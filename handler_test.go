@@ -304,6 +304,11 @@ func TestAlarmHandler(t *testing.T) {
 		body   string
 	}{
 		{
+			route:  "/ifttt/v1/actions/partarm",
+			status: http.StatusOK,
+			body:   "Successfuly executed action partarm",
+		},
+		{
 			route:  "/alarm/arm",
 			status: http.StatusOK,
 			body:   "Successfuly executed action arm",
