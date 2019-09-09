@@ -99,7 +99,8 @@ func NewHandler(oauthClientId, oauthClientSecret, domain string, redirectURIs []
 func (h *handlerImpl) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := h.srv.ValidationBearerToken(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("Error validating token: %v", err)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -114,7 +115,8 @@ func (h *handlerImpl) IndexHandler(w http.ResponseWriter, r *http.Request) {
 func (h *handlerImpl) AlarmHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := h.srv.ValidationBearerToken(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("Error validating token: %v", err)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -131,6 +133,7 @@ func (h *handlerImpl) AlarmHandler(w http.ResponseWriter, r *http.Request) {
 func (h *handlerImpl) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 	err := h.srv.HandleAuthorizeRequest(w, r)
 	if err != nil {
+		log.Printf("Error authorizing client: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 }
@@ -149,7 +152,8 @@ func (h *handlerImpl) StatusHandler(w http.ResponseWriter, r *http.Request) {
 func (h *handlerImpl) IFTTTHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := h.srv.ValidationBearerToken(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("Error validating token: %v", err)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 

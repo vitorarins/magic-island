@@ -260,16 +260,37 @@ func TestIndexHandler(t *testing.T) {
 		route  string
 		status int
 		body   string
+		token  string
 	}{
 		{
 			route:  "/",
 			status: http.StatusOK,
 			body:   "Matrix",
+			token:  globalToken.AccessToken,
 		},
 		{
 			route:  "/404",
 			status: http.StatusNotFound,
 			body:   "404 page not found\n",
+			token:  globalToken.AccessToken,
+		},
+		{
+			route:  "/",
+			status: http.StatusUnauthorized,
+			body:   "invalid access token\n",
+			token:  "unauthorized",
+		},
+		{
+			route:  "/",
+			status: http.StatusUnauthorized,
+			body:   "invalid access token\n",
+			token:  "",
+		},
+		{
+			route:  "/unauthorized",
+			status: http.StatusUnauthorized,
+			body:   "invalid access token\n",
+			token:  "",
 		},
 	}
 
@@ -279,9 +300,11 @@ func TestIndexHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		q := req.URL.Query()
-		q.Add("access_token", globalToken.AccessToken)
-		req.URL.RawQuery = q.Encode()
+		if test.token != "" {
+			q := req.URL.Query()
+			q.Add("access_token", test.token)
+			req.URL.RawQuery = q.Encode()
+		}
 
 		rr := httptest.NewRecorder()
 		server := http.HandlerFunc(handler.IndexHandler)
