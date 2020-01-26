@@ -51,7 +51,7 @@ func main() {
 	// setup requester, storer and http handler
 	requester := NewRequester(*actionsLocation, *feenstraPassCode, *feenstraKey, *makerKey)
 	storer := NewStorer(ctx, client)
-	handler := NewHandler(*oauthClientId, *oauthClientSecret, *domain, redirectURIList, requester)
+	handler := NewHandler(*oauthClientId, *oauthClientSecret, *domain, redirectURIList, requester, client)
 
 	http.HandleFunc("/authorize", handler.AuthorizeHandler)
 	http.HandleFunc("/token", handler.TokenHandler)

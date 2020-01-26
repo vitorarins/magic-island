@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"net/url"
 	"testing"
 
+	"cloud.google.com/go/firestore"
 	"golang.org/x/oauth2"
 )
 
@@ -33,8 +35,10 @@ var (
 	testDomain            = "https://magic.com"
 	testRedirectUrl       = "https://redirect.com/test"
 
-	requester = &fakeRequester{}
-	handler   = NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester)
+	requester            = &fakeRequester{}
+	ctx                  = context.Background()
+	firestoreClient, err = firestore.NewClient(ctx, "test")
+	handler              = NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
 )
 
 func TestAuthorizeHandler(t *testing.T) {
@@ -47,6 +51,7 @@ func TestAuthorizeHandler(t *testing.T) {
 	}
 
 	tests := []struct {
+		caseNumber   int
 		clientId     string
 		clientSecret string
 		redirectUrl  string
@@ -54,6 +59,7 @@ func TestAuthorizeHandler(t *testing.T) {
 		body         string
 	}{
 		{
+			caseNumber:   1,
 			clientId:     "",
 			clientSecret: "",
 			redirectUrl:  "",
@@ -61,6 +67,7 @@ func TestAuthorizeHandler(t *testing.T) {
 			body:         "invalid_request\n",
 		},
 		{
+			caseNumber:   2,
 			clientId:     "0000000000",
 			clientSecret: testOauthClientSecret,
 			redirectUrl:  testRedirectUrl,
@@ -68,6 +75,7 @@ func TestAuthorizeHandler(t *testing.T) {
 			body:         "",
 		},
 		{
+			caseNumber:   3,
 			clientId:     testOauthClientId,
 			clientSecret: "0000000000000",
 			redirectUrl:  testRedirectUrl,
@@ -75,6 +83,7 @@ func TestAuthorizeHandler(t *testing.T) {
 			body:         "",
 		},
 		{
+			caseNumber:   4,
 			clientId:     testOauthClientId,
 			clientSecret: testOauthClientSecret,
 			redirectUrl:  "http://wrong",
@@ -99,11 +108,11 @@ func TestAuthorizeHandler(t *testing.T) {
 
 		resp := rr.Result()
 		if status := resp.StatusCode; status != test.status {
-			t.Errorf("unexpected status: got (%v) want (%v)", status, test.status)
+			t.Errorf("unexpected status on test case '%v': got (%v) want (%v)", test.caseNumber, status, test.status)
 		}
 
 		if rr.Body.String() != test.body {
-			t.Errorf("unexpected body: got (%v) want (%v)", rr.Body.String(), test.body)
+			t.Errorf("unexpected body on test case '%v': got (%v) want (%v)", test.caseNumber, rr.Body.String(), test.body)
 		}
 	}
 
@@ -141,6 +150,7 @@ func TestAuthorizeHandler(t *testing.T) {
 
 func TestTokenHandler(t *testing.T) {
 	tests := []struct {
+		caseNumber   int
 		clientId     string
 		clientSecret string
 		redirectUrl  string
@@ -149,6 +159,7 @@ func TestTokenHandler(t *testing.T) {
 		body         string
 	}{
 		{
+			caseNumber:   1,
 			clientId:     "",
 			clientSecret: "",
 			redirectUrl:  "",
@@ -157,6 +168,7 @@ func TestTokenHandler(t *testing.T) {
 			body:         `{"error":"invalid_client","error_description":"Client authentication failed"}` + "\n",
 		},
 		{
+			caseNumber:   2,
 			clientId:     "0000000000",
 			clientSecret: testOauthClientSecret,
 			redirectUrl:  testRedirectUrl,
@@ -165,6 +177,7 @@ func TestTokenHandler(t *testing.T) {
 			body:         `{"error":"server_error","error_description":"The authorization server encountered an unexpected condition that prevented it from fulfilling the request"}` + "\n",
 		},
 		{
+			caseNumber:   3,
 			clientId:     testOauthClientId,
 			clientSecret: "0000000000000",
 			redirectUrl:  testRedirectUrl,
@@ -173,6 +186,7 @@ func TestTokenHandler(t *testing.T) {
 			body:         `{"error":"invalid_client","error_description":"Client authentication failed"}` + "\n",
 		},
 		{
+			caseNumber:   4,
 			clientId:     testOauthClientId,
 			clientSecret: testOauthClientSecret,
 			redirectUrl:  "http://wrong.com",
@@ -181,12 +195,13 @@ func TestTokenHandler(t *testing.T) {
 			body:         `{"error":"server_error","error_description":"The authorization server encountered an unexpected condition that prevented it from fulfilling the request"}` + "\n",
 		},
 		{
+			caseNumber:   5,
 			clientId:     testOauthClientId,
 			clientSecret: testOauthClientSecret,
 			redirectUrl:  testRedirectUrl,
 			code:         "randomCode",
-			status:       http.StatusUnauthorized,
-			body:         `{"error":"invalid_grant","error_description":"The provided authorization grant (e.g., authorization code, resource owner credentials) or refresh token is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client"}` + "\n",
+			status:       http.StatusInternalServerError,
+			body:         `{"error":"server_error","error_description":"The authorization server encountered an unexpected condition that prevented it from fulfilling the request"}` + "\n",
 		},
 	}
 
@@ -210,11 +225,11 @@ func TestTokenHandler(t *testing.T) {
 
 		resp := rr.Result()
 		if status := resp.StatusCode; status != test.status {
-			t.Errorf("unexpected status: got (%v) want (%v)", status, test.status)
+			t.Errorf("unexpected status on test case '%v': got (%v) want (%v)", test.caseNumber, status, test.status)
 		}
 
 		if rr.Body.String() != test.body {
-			t.Errorf("unexpected body: got (%v) want (%v)", rr.Body.String(), test.body)
+			t.Errorf("unexpected body on test case '%v': got (%v) want (%v)", test.caseNumber, rr.Body.String(), test.body)
 		}
 	}
 
@@ -257,40 +272,46 @@ func TestTokenHandler(t *testing.T) {
 
 func TestIndexHandler(t *testing.T) {
 	tests := []struct {
-		route  string
-		status int
-		body   string
-		token  string
+		caseNumber int
+		route      string
+		status     int
+		body       string
+		token      string
 	}{
 		{
-			route:  "/",
-			status: http.StatusOK,
-			body:   "Matrix",
-			token:  globalToken.AccessToken,
+			caseNumber: 1,
+			route:      "/",
+			status:     http.StatusOK,
+			body:       "Matrix",
+			token:      globalToken.AccessToken,
 		},
 		{
-			route:  "/404",
-			status: http.StatusNotFound,
-			body:   "404 page not found\n",
-			token:  globalToken.AccessToken,
+			caseNumber: 2,
+			route:      "/404",
+			status:     http.StatusNotFound,
+			body:       "404 page not found\n",
+			token:      globalToken.AccessToken,
 		},
 		{
-			route:  "/",
-			status: http.StatusUnauthorized,
-			body:   "invalid access token\n",
-			token:  "unauthorized",
+			caseNumber: 3,
+			route:      "/",
+			status:     http.StatusUnauthorized,
+			body:       "no more items in iterator\n",
+			token:      "unauthorized",
 		},
 		{
-			route:  "/",
-			status: http.StatusUnauthorized,
-			body:   "invalid access token\n",
-			token:  "",
+			caseNumber: 4,
+			route:      "/",
+			status:     http.StatusUnauthorized,
+			body:       "invalid access token\n",
+			token:      "",
 		},
 		{
-			route:  "/unauthorized",
-			status: http.StatusUnauthorized,
-			body:   "invalid access token\n",
-			token:  "",
+			caseNumber: 5,
+			route:      "/unauthorized",
+			status:     http.StatusUnauthorized,
+			body:       "invalid access token\n",
+			token:      "",
 		},
 	}
 
@@ -311,11 +332,11 @@ func TestIndexHandler(t *testing.T) {
 		server.ServeHTTP(rr, req)
 
 		if status := rr.Code; status != test.status {
-			t.Errorf("unexpected status: got (%v) want (%v)", status, test.status)
+			t.Errorf("unexpected status on test case '%v': got (%v) want (%v)", test.caseNumber, status, test.status)
 		}
 
 		if rr.Body.String() != test.body {
-			t.Errorf("unexpected body: got (%v) want (%v)", rr.Body.String(), test.body)
+			t.Errorf("unexpected body on test case '%v': got (%v) want (%v)", test.caseNumber, rr.Body.String(), test.body)
 		}
 	}
 }

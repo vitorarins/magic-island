@@ -9,6 +9,8 @@ import (
 	"path"
 	"strings"
 
+	"cloud.google.com/go/firestore"
+	"github.com/tslamic/go-oauth2-firestore"
 	"gopkg.in/oauth2.v3/errors"
 	"gopkg.in/oauth2.v3/manage"
 	"gopkg.in/oauth2.v3/models"
@@ -31,7 +33,7 @@ type handlerImpl struct {
 	srv            *server.Server
 }
 
-func NewHandler(oauthClientId, oauthClientSecret, domain string, redirectURIs []string, requester Requester) Handler {
+func NewHandler(oauthClientId, oauthClientSecret, domain string, redirectURIs []string, requester Requester, firestoreClient *firestore.Client) Handler {
 
 	// setup OAuth stuff
 	manager := manage.NewDefaultManager()
@@ -56,8 +58,9 @@ func NewHandler(oauthClientId, oauthClientSecret, domain string, redirectURIs []
 		return
 	})
 
-	// token memory store
-	manager.MustTokenStorage(store.NewMemoryTokenStore())
+	// token firestore
+	storage := fstore.New(firestoreClient, "tokens")
+	manager.MapTokenStorage(storage)
 	// client memory store
 	clientStore := store.NewClientStore()
 	clientStore.Set(oauthClientId, &models.Client{
