@@ -14,6 +14,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
+	"google.golang.org/api/iterator"
 )
 
 type fakeRequester struct{}
@@ -45,7 +46,7 @@ var (
 )
 
 func TestLoginHandler(t *testing.T) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("test"), 16)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("test"), 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -584,8 +585,8 @@ func TestIFTTTHandler(t *testing.T) {
 	}
 
 	userName, ok := userData["name"]
-	if !ok || userName != "Only user" {
-		t.Errorf("unexpected user data name: got (%v) want (%v)", userName, "Only user")
+	if !ok || userName != "vitorarins" {
+		t.Errorf("unexpected user data name: got (%v) want (%v)", userName, "vitorarins")
 	}
 
 	userId, ok := userData["id"]
@@ -594,8 +595,302 @@ func TestIFTTTHandler(t *testing.T) {
 	}
 }
 
+func TestNotHomeHandler(t *testing.T) {
+	tests := []struct {
+		caseNumber int
+		route      string
+		status     int
+		body       string
+		users      []map[string]interface{}
+	}{
+		{
+			caseNumber: 1,
+			route:      "/ifttt/v1/actions/nothome",
+			status:     http.StatusInternalServerError,
+			body:       `rpc error: code = NotFound desc = "projects/test/databases/(default)/documents/users/vitorarins" not found` + "\n",
+			users:      []map[string]interface{}{},
+		},
+		{
+			caseNumber: 2,
+			route:      "/ifttt/v1/actions/nothome",
+			status:     http.StatusOK,
+			body:       "Successfuly executed action arm",
+			users: []map[string]interface{}{
+				map[string]interface{}{
+					"username": "vitorarins",
+				},
+			},
+		},
+		{
+			caseNumber: 3,
+			route:      "/ifttt/v1/actions/nothome",
+			status:     http.StatusOK,
+			body:       "Successfuly executed action arm",
+			users: []map[string]interface{}{
+				map[string]interface{}{
+					"username": "vitorarins",
+					"home":     false,
+				},
+			},
+		},
+		{
+			caseNumber: 4,
+			route:      "/ifttt/v1/actions/nothome",
+			status:     http.StatusOK,
+			body:       "Successfuly executed action arm",
+			users: []map[string]interface{}{
+				map[string]interface{}{
+					"username": "vitorarins",
+					"home":     true,
+				},
+			},
+		},
+		{
+			caseNumber: 5,
+			route:      "/ifttt/v1/actions/nothome",
+			status:     http.StatusOK,
+			body:       "Successfuly marked user as not home",
+			users: []map[string]interface{}{
+				map[string]interface{}{
+					"username": "vitorarins",
+					"home":     true,
+				},
+				map[string]interface{}{
+					"username": "testuser",
+					"home":     true,
+				},
+			},
+		},
+		{
+			caseNumber: 6,
+			route:      "/ifttt/v1/actions/nothome",
+			status:     http.StatusOK,
+			body:       "Successfuly executed action arm",
+			users: []map[string]interface{}{
+				map[string]interface{}{
+					"username": "vitorarins",
+					"home":     true,
+				},
+				map[string]interface{}{
+					"username": "testuser",
+					"home":     false,
+				},
+			},
+		},
+		{
+			caseNumber: 7,
+			route:      "/ifttt/v1/actions/nothome",
+			status:     http.StatusOK,
+			body:       "Successfuly marked user as not home",
+			users: []map[string]interface{}{
+				map[string]interface{}{
+					"username": "vitorarins",
+					"home":     true,
+				},
+				map[string]interface{}{
+					"username": "testuser",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		deleteCollection(ctx, firestoreClient, firestoreClient.Collection("users"), 10)
+		for _, user := range test.users {
+			firestoreClient.Collection("users").Doc(user["username"].(string)).Set(ctx, user, firestore.MergeAll)
+		}
+
+		req, err := http.NewRequest("GET", test.route, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		q := req.URL.Query()
+		q.Add("access_token", globalToken.AccessToken)
+		req.URL.RawQuery = q.Encode()
+
+		rr := httptest.NewRecorder()
+		server := http.HandlerFunc(handler.NotHomeHandler)
+		server.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != test.status {
+			t.Errorf("unexpected status on test case '%v': got (%v) want (%v)", test.caseNumber, status, test.status)
+		}
+
+		if rr.Body.String() != test.body {
+			t.Errorf("unexpected body on test case '%v': got (%v) want (%v)", test.caseNumber, rr.Body.String(), test.body)
+		}
+	}
+}
+
+func TestHomeHandler(t *testing.T) {
+	tests := []struct {
+		caseNumber int
+		route      string
+		status     int
+		body       string
+		users      []map[string]interface{}
+	}{
+		{
+			caseNumber: 1,
+			route:      "/ifttt/v1/actions/home",
+			status:     http.StatusInternalServerError,
+			body:       `rpc error: code = NotFound desc = "projects/test/databases/(default)/documents/users/vitorarins" not found` + "\n",
+			users:      []map[string]interface{}{},
+		},
+		{
+			caseNumber: 2,
+			route:      "/ifttt/v1/actions/home",
+			status:     http.StatusOK,
+			body:       "Successfuly marked user as at home",
+			users: []map[string]interface{}{
+				map[string]interface{}{
+					"username": "vitorarins",
+				},
+			},
+		},
+		{
+			caseNumber: 3,
+			route:      "/ifttt/v1/actions/home",
+			status:     http.StatusOK,
+			body:       "Successfuly marked user as at home",
+			users: []map[string]interface{}{
+				map[string]interface{}{
+					"username": "vitorarins",
+					"home":     false,
+				},
+			},
+		},
+		{
+			caseNumber: 4,
+			route:      "/ifttt/v1/actions/home",
+			status:     http.StatusOK,
+			body:       "Successfuly marked user as at home",
+			users: []map[string]interface{}{
+				map[string]interface{}{
+					"username": "vitorarins",
+					"home":     true,
+				},
+			},
+		},
+		{
+			caseNumber: 5,
+			route:      "/ifttt/v1/actions/home",
+			status:     http.StatusOK,
+			body:       "Successfuly marked user as at home",
+			users: []map[string]interface{}{
+				map[string]interface{}{
+					"username": "vitorarins",
+					"home":     true,
+				},
+				map[string]interface{}{
+					"username": "testuser",
+					"home":     true,
+				},
+			},
+		},
+		{
+			caseNumber: 6,
+			route:      "/ifttt/v1/actions/home",
+			status:     http.StatusOK,
+			body:       "Successfuly marked user as at home",
+			users: []map[string]interface{}{
+				map[string]interface{}{
+					"username": "vitorarins",
+					"home":     true,
+				},
+				map[string]interface{}{
+					"username": "testuser",
+					"home":     false,
+				},
+			},
+		},
+		{
+			caseNumber: 7,
+			route:      "/ifttt/v1/actions/home",
+			status:     http.StatusOK,
+			body:       "Successfuly marked user as at home",
+			users: []map[string]interface{}{
+				map[string]interface{}{
+					"username": "vitorarins",
+					"home":     true,
+				},
+				map[string]interface{}{
+					"username": "testuser",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		deleteCollection(ctx, firestoreClient, firestoreClient.Collection("users"), 10)
+		for _, user := range test.users {
+			firestoreClient.Collection("users").Doc(user["username"].(string)).Set(ctx, user, firestore.MergeAll)
+		}
+
+		req, err := http.NewRequest("GET", test.route, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		q := req.URL.Query()
+		q.Add("access_token", globalToken.AccessToken)
+		req.URL.RawQuery = q.Encode()
+
+		rr := httptest.NewRecorder()
+		server := http.HandlerFunc(handler.HomeHandler)
+		server.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != test.status {
+			t.Errorf("unexpected status on test case '%v': got (%v) want (%v)", test.caseNumber, status, test.status)
+		}
+
+		if rr.Body.String() != test.body {
+			t.Errorf("unexpected body on test case '%v': got (%v) want (%v)", test.caseNumber, rr.Body.String(), test.body)
+		}
+	}
+}
+
 func restoreCookies(request *http.Request) {
 	for _, cookie := range globalCookieJar {
 		request.AddCookie(cookie)
+	}
+}
+
+func deleteCollection(ctx context.Context, client *firestore.Client,
+	ref *firestore.CollectionRef, batchSize int) error {
+
+	for {
+		// Get a batch of documents
+		iter := ref.Limit(batchSize).Documents(ctx)
+		numDeleted := 0
+
+		// Iterate through the documents, adding
+		// a delete operation for each one to a
+		// WriteBatch.
+		batch := client.Batch()
+		for {
+			doc, err := iter.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				return err
+			}
+
+			batch.Delete(doc.Ref)
+			numDeleted++
+		}
+
+		// If there are no documents to delete,
+		// the process is over.
+		if numDeleted == 0 {
+			return nil
+		}
+
+		_, err := batch.Commit(ctx)
+		if err != nil {
+			return err
+		}
 	}
 }

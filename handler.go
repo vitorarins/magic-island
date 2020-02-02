@@ -15,6 +15,7 @@ import (
 	"github.com/go-session/session"
 	"github.com/tslamic/go-oauth2-firestore"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/api/iterator"
 	"gopkg.in/oauth2.v3/errors"
 	"gopkg.in/oauth2.v3/manage"
 	"gopkg.in/oauth2.v3/models"
@@ -31,12 +32,15 @@ type Handler interface {
 	IFTTTHandler(w http.ResponseWriter, r *http.Request)
 	LoginHandler(w http.ResponseWriter, r *http.Request)
 	AuthHandler(w http.ResponseWriter, r *http.Request)
+	NotHomeHandler(w http.ResponseWriter, r *http.Request)
+	HomeHandler(w http.ResponseWriter, r *http.Request)
 }
 
 type handlerImpl struct {
-	requester      Requester
-	allowedActions map[string]string
-	srv            *server.Server
+	requester       Requester
+	allowedActions  map[string]string
+	srv             *server.Server
+	firestoreClient *firestore.Client
 }
 
 func NewHandler(oauthClientId, oauthClientSecret, domain string, redirectURIs []string, requester Requester, firestoreClient *firestore.Client) Handler {
@@ -102,6 +106,7 @@ func NewHandler(oauthClientId, oauthClientSecret, domain string, redirectURIs []
 			"partarm": "partarm",
 			"disarm":  "disarm",
 		},
+		firestoreClient: firestoreClient,
 	}
 }
 
@@ -185,7 +190,7 @@ func (h *handlerImpl) IFTTTHandler(w http.ResponseWriter, r *http.Request) {
 	case "/ifttt/v1/user/info":
 		data := map[string]interface{}{
 			"data": map[string]string{
-				"name": "Only user",
+				"name": token.GetUserID(),
 				"id":   token.GetUserID(),
 			},
 		}
@@ -245,6 +250,92 @@ func (h *handlerImpl) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	outputHTML(w, r, "static/auth.html")
+}
+
+func (h *handlerImpl) NotHomeHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := h.srv.ValidationBearerToken(r)
+	if err != nil {
+		log.Printf("Error validating token: %v", err)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	userId := token.GetUserID()
+	user := map[string]interface{}{
+		"home": false,
+	}
+
+	ctx := context.Background()
+	_, err = h.firestoreClient.Collection("users").Doc(userId).Get(ctx)
+	if err != nil {
+		log.Printf("Error setting user as not home: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	_, err = h.firestoreClient.Collection("users").Doc(userId).Set(ctx, user, firestore.MergeAll)
+	if err != nil {
+		log.Printf("Error setting user as not home: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	someoneAtHome := true
+	iter := h.firestoreClient.Collection("users").Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			log.Printf("Error retrieving users for nothome: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		user := doc.Data()
+		if userAtHome, ok := user["home"]; ok {
+			if someoneAtHome = userAtHome.(bool); someoneAtHome {
+				break
+			}
+		} else {
+			someoneAtHome = true
+			break
+		}
+	}
+	if !someoneAtHome {
+		h.requester.RequestFeenstra("arm")
+		fmt.Fprintf(w, "Successfuly executed action %s", "arm")
+	} else {
+		fmt.Fprintf(w, "Successfuly marked user as not home")
+	}
+}
+
+func (h *handlerImpl) HomeHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := h.srv.ValidationBearerToken(r)
+	if err != nil {
+		log.Printf("Error validating token: %v", err)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	userId := token.GetUserID()
+	user := map[string]interface{}{
+		"home": true,
+	}
+
+	ctx := context.Background()
+	_, err = h.firestoreClient.Collection("users").Doc(userId).Get(ctx)
+	if err != nil {
+		log.Printf("Error setting user as at home: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	_, err = h.firestoreClient.Collection("users").Doc(userId).Set(ctx, user, firestore.MergeAll)
+	if err != nil {
+		log.Printf("Error setting user as at home: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintf(w, "Successfuly marked user as at home")
 }
 
 func userAuthorizeHandler(w http.ResponseWriter, r *http.Request) (userID string, err error) {
