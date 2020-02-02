@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"cloud.google.com/go/firestore"
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 )
 
@@ -27,8 +29,9 @@ func (f *fakeRequester) RequestMaker(detector, status string) string {
 }
 
 var (
-	globalCode  string
-	globalToken oauth2.Token
+	globalCode      string
+	globalToken     oauth2.Token
+	globalCookieJar []*http.Cookie
 
 	testOauthClientId     = "222222"
 	testOauthClientSecret = "222222"
@@ -40,6 +43,130 @@ var (
 	firestoreClient, err = firestore.NewClient(ctx, "test")
 	handler              = NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
 )
+
+func TestLoginHandler(t *testing.T) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("test"), 16)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	user := map[string]string{
+		"username": "vitorarins",
+		"password": string(hashedPassword),
+	}
+	firestoreClient.Collection("users").Doc("vitorarins").Set(ctx, user, firestore.MergeAll)
+
+	req, err := http.NewRequest("GET", "/login", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	server := http.HandlerFunc(handler.LoginHandler)
+	server.ServeHTTP(rr, req)
+
+	resp := rr.Result()
+	if status := resp.StatusCode; status != http.StatusOK {
+		t.Errorf("unexpected status: got (%v) want (%v)", status, http.StatusOK)
+	}
+
+	responseHtml := rr.Body.String()
+	expectedHtml := "<title>Login</title>"
+	if !strings.Contains(responseHtml, expectedHtml) {
+		t.Errorf("unexpected body: %v should contain (%v)", responseHtml, expectedHtml)
+	}
+
+	req, err = http.NewRequest("POST", "/login", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr = httptest.NewRecorder()
+	server = http.HandlerFunc(handler.LoginHandler)
+	server.ServeHTTP(rr, req)
+
+	resp = rr.Result()
+	if status := resp.StatusCode; status != http.StatusInternalServerError {
+		t.Errorf("unexpected status: got (%v) want (%v)", status, http.StatusInternalServerError)
+	}
+
+	if rr.Body.String() != "missing form body\n" {
+		t.Errorf("unexpected body: got (%v) want (%v)", rr.Body.String(), "missing form body")
+	}
+
+	formData := url.Values{
+		"username": {"vitorarins"},
+		"password": {"test"},
+	}
+	req, err = http.NewRequest("POST", "/login", strings.NewReader(formData.Encode()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	rr = httptest.NewRecorder()
+	server = http.HandlerFunc(handler.LoginHandler)
+	server.ServeHTTP(rr, req)
+
+	resp = rr.Result()
+	if status := resp.StatusCode; status != http.StatusFound {
+		t.Errorf("unexpected status: got (%v) want (%v)", status, http.StatusFound)
+	}
+
+	if rr.Body.String() != "" {
+		t.Errorf("unexpected body: got (%v) want (%v)", rr.Body.String(), "")
+	}
+
+	if resp.Header.Get("Location") != "/auth" {
+		t.Errorf("unexpected redirect url: got (%v) want (%v)", resp.Header.Get("Location"), "/auth")
+	}
+
+	if len(resp.Cookies()) <= 0 {
+		t.Errorf("No cookies!")
+	}
+	globalCookieJar = resp.Cookies()
+}
+
+func TestAuthHandler(t *testing.T) {
+	req, err := http.NewRequest("GET", "/auth", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	server := http.HandlerFunc(handler.AuthHandler)
+	server.ServeHTTP(rr, req)
+
+	resp := rr.Result()
+	if status := resp.StatusCode; status != http.StatusFound {
+		t.Errorf("unexpected status: got (%v) want (%v)", status, http.StatusFound)
+	}
+
+	if resp.Header.Get("Location") != "/login" {
+		t.Errorf("unexpected redirect url: got (%v) want (%v)", resp.Header.Get("Location"), "/login")
+	}
+
+	req, err = http.NewRequest("GET", "/auth", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restoreCookies(req)
+
+	rr = httptest.NewRecorder()
+	server = http.HandlerFunc(handler.AuthHandler)
+	server.ServeHTTP(rr, req)
+
+	resp = rr.Result()
+	if status := resp.StatusCode; status != http.StatusOK {
+		t.Errorf("unexpected status: got (%v) want (%v)", status, http.StatusOK)
+	}
+
+	responseHtml := rr.Body.String()
+	expectedHtml := "<title>Auth</title>"
+	if !strings.Contains(responseHtml, expectedHtml) {
+		t.Errorf("unexpected body: %v should contain (%v)", responseHtml, expectedHtml)
+	}
+}
 
 func TestAuthorizeHandler(t *testing.T) {
 	clientConfig := oauth2.Config{
@@ -124,6 +251,7 @@ func TestAuthorizeHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	restoreCookies(req)
 
 	rr := httptest.NewRecorder()
 	server := http.HandlerFunc(handler.AuthorizeHandler)
@@ -152,6 +280,7 @@ func TestTokenHandler(t *testing.T) {
 	tests := []struct {
 		caseNumber   int
 		clientId     string
+		userId       string
 		clientSecret string
 		redirectUrl  string
 		code         string
@@ -161,6 +290,7 @@ func TestTokenHandler(t *testing.T) {
 		{
 			caseNumber:   1,
 			clientId:     "",
+			userId:       "vitorarins",
 			clientSecret: "",
 			redirectUrl:  "",
 			code:         "",
@@ -170,6 +300,7 @@ func TestTokenHandler(t *testing.T) {
 		{
 			caseNumber:   2,
 			clientId:     "0000000000",
+			userId:       "vitorarins",
 			clientSecret: testOauthClientSecret,
 			redirectUrl:  testRedirectUrl,
 			code:         globalCode,
@@ -179,6 +310,7 @@ func TestTokenHandler(t *testing.T) {
 		{
 			caseNumber:   3,
 			clientId:     testOauthClientId,
+			userId:       "vitorarins",
 			clientSecret: "0000000000000",
 			redirectUrl:  testRedirectUrl,
 			code:         globalCode,
@@ -188,6 +320,7 @@ func TestTokenHandler(t *testing.T) {
 		{
 			caseNumber:   4,
 			clientId:     testOauthClientId,
+			userId:       "vitorarins",
 			clientSecret: testOauthClientSecret,
 			redirectUrl:  "http://wrong.com",
 			code:         globalCode,
@@ -197,6 +330,7 @@ func TestTokenHandler(t *testing.T) {
 		{
 			caseNumber:   5,
 			clientId:     testOauthClientId,
+			userId:       "vitorarins",
 			clientSecret: testOauthClientSecret,
 			redirectUrl:  testRedirectUrl,
 			code:         "randomCode",
@@ -214,6 +348,7 @@ func TestTokenHandler(t *testing.T) {
 		q := req.URL.Query()
 		q.Add("grant_type", "authorization_code")
 		q.Add("client_id", test.clientId)
+		q.Add("user_id", test.userId)
 		q.Add("client_secret", test.clientSecret)
 		q.Add("redirect_uri", test.redirectUrl)
 		q.Add("code", test.code)
@@ -241,6 +376,7 @@ func TestTokenHandler(t *testing.T) {
 	q := req.URL.Query()
 	q.Add("grant_type", "authorization_code")
 	q.Add("client_id", testOauthClientId)
+	q.Add("user_id", "vitorarins")
 	q.Add("client_secret", testOauthClientSecret)
 	q.Add("redirect_uri", testRedirectUrl)
 	q.Add("code", globalCode)
@@ -453,7 +589,13 @@ func TestIFTTTHandler(t *testing.T) {
 	}
 
 	userId, ok := userData["id"]
-	if !ok || userId != "onlyuserwehave" {
-		t.Errorf("unexpected user data id: got (%v) want (%v)", userId, "onlyuserwehave")
+	if !ok || userId != "vitorarins" {
+		t.Errorf("unexpected user data id: got (%v) want (%v)", userId, "vitorarins")
+	}
+}
+
+func restoreCookies(request *http.Request) {
+	for _, cookie := range globalCookieJar {
+		request.AddCookie(cookie)
 	}
 }

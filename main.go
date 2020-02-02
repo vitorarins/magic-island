@@ -53,6 +53,8 @@ func main() {
 	storer := NewStorer(ctx, client)
 	handler := NewHandler(*oauthClientId, *oauthClientSecret, *domain, redirectURIList, requester, client)
 
+	http.HandleFunc("/login", handler.LoginHandler)
+	http.HandleFunc("/auth", handler.AuthHandler)
 	http.HandleFunc("/authorize", handler.AuthorizeHandler)
 	http.HandleFunc("/token", handler.TokenHandler)
 	http.HandleFunc("/", handler.IndexHandler)

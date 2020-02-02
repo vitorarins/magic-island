@@ -10,6 +10,7 @@ require (
 	github.com/go-session/session v3.1.2+incompatible
 	github.com/stretchr/testify v1.4.0
 	github.com/tslamic/go-oauth2-firestore v0.1.0
+	golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	gopkg.in/oauth2.v3 v3.12.0
 )

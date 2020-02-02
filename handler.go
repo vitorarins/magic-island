@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,6 +14,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/go-session/session"
 	"github.com/tslamic/go-oauth2-firestore"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/oauth2.v3/errors"
 	"gopkg.in/oauth2.v3/manage"
 	"gopkg.in/oauth2.v3/models"
@@ -63,9 +65,10 @@ func NewHandler(oauthClientId, oauthClientSecret, domain string, redirectURIs []
 	})
 
 	// token firestore
+
 	storage := fstore.New(firestoreClient, "tokens")
 	manager.MapTokenStorage(storage)
-	// client memory store
+	// client firestore store
 	clientStore := store.NewClientStore()
 	clientStore.Set(oauthClientId, &models.Client{
 		ID:     oauthClientId,
@@ -77,6 +80,8 @@ func NewHandler(oauthClientId, oauthClientSecret, domain string, redirectURIs []
 	srv.SetAllowGetAccessRequest(true)
 	srv.SetClientInfoHandler(server.ClientFormHandler)
 
+	passwordAuthorizeHandler := passwordAuthorizeHandlerGenerator(firestoreClient)
+	srv.SetPasswordAuthorizationHandler(passwordAuthorizeHandler)
 	srv.SetUserAuthorizationHandler(userAuthorizeHandler)
 
 	srv.SetInternalErrorHandler(func(err error) (re *errors.Response) {
@@ -136,9 +141,23 @@ func (h *handlerImpl) AlarmHandler(w http.ResponseWriter, r *http.Request) {
 
 // AuthorizeHandler authorizes oauth clients
 func (h *handlerImpl) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
-	err := h.srv.HandleAuthorizeRequest(w, r)
+	store, err := session.Start(nil, w, r)
 	if err != nil {
-		log.Printf("Error authorizing client: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var form url.Values
+	if v, ok := store.Get("ReturnUri"); ok {
+		form = v.(url.Values)
+	}
+	r.Form = form
+
+	store.Delete("ReturnUri")
+	store.Save()
+
+	err = h.srv.HandleAuthorizeRequest(w, r)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 }
@@ -155,7 +174,7 @@ func (h *handlerImpl) StatusHandler(w http.ResponseWriter, r *http.Request) {
 
 // IFTTTHandler handles every request that is not an action from IFTTT
 func (h *handlerImpl) IFTTTHandler(w http.ResponseWriter, r *http.Request) {
-	_, err := h.srv.ValidationBearerToken(r)
+	token, err := h.srv.ValidationBearerToken(r)
 	if err != nil {
 		log.Printf("Error validating token: %v", err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -167,7 +186,7 @@ func (h *handlerImpl) IFTTTHandler(w http.ResponseWriter, r *http.Request) {
 		data := map[string]interface{}{
 			"data": map[string]string{
 				"name": "Only user",
-				"id":   "onlyuserwehave",
+				"id":   token.GetUserID(),
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -176,6 +195,56 @@ func (h *handlerImpl) IFTTTHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+func (h *handlerImpl) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	store, err := session.Start(nil, w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if r.Method == "POST" {
+		if r.Form == nil {
+			if err := r.ParseForm(); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		r.Form["grant_type"] = []string{"password"}
+		r.Form["client_id"] = []string{"unused"}
+		r.Form["client_secret"] = []string{"unused"}
+
+		_, tgr, err := h.srv.ValidationTokenRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		store.Set("LoggedInUserID", tgr.UserID)
+		store.Save()
+
+		w.Header().Set("Location", "/auth")
+		w.WriteHeader(http.StatusFound)
+		return
+	}
+	outputHTML(w, r, "static/login.html")
+}
+
+func (h *handlerImpl) AuthHandler(w http.ResponseWriter, r *http.Request) {
+	store, err := session.Start(nil, w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if _, ok := store.Get("LoggedInUserID"); !ok {
+		w.Header().Set("Location", "/login")
+		w.WriteHeader(http.StatusFound)
+		return
+	}
+
+	outputHTML(w, r, "static/auth.html")
 }
 
 func userAuthorizeHandler(w http.ResponseWriter, r *http.Request) (userID string, err error) {
@@ -204,44 +273,23 @@ func userAuthorizeHandler(w http.ResponseWriter, r *http.Request) (userID string
 	return
 }
 
-func (h *handlerImpl) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	store, err := session.Start(nil, w, r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if r.Method == "POST" {
-		if r.Form == nil {
-			if err := r.ParseForm(); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+func passwordAuthorizeHandlerGenerator(firestoreClient *firestore.Client) func(string, string) (string, error) {
+	return func(username, password string) (userID string, err error) {
+		type User struct {
+			Username string `firestore:"username"`
+			Password string `firestore:"password"`
 		}
-		store.Set("LoggedInUserID", r.Form.Get("username"))
-		store.Save()
+		var user User
+		ctx := context.Background()
+		dsnap, err := firestoreClient.Collection("users").Doc(username).Get(ctx)
+		if err != nil {
+			return "", err
+		}
+		dsnap.DataTo(&user)
+		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 
-		w.Header().Set("Location", "/auth")
-		w.WriteHeader(http.StatusFound)
-		return
+		return user.Username, err
 	}
-	outputHTML(w, r, "static/login.html")
-}
-
-func (h *handlerImpl) AuthHandler(w http.ResponseWriter, r *http.Request) {
-	store, err := session.Start(nil, w, r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if _, ok := store.Get("LoggedInUserID"); !ok {
-		w.Header().Set("Location", "/login")
-		w.WriteHeader(http.StatusFound)
-		return
-	}
-
-	outputHTML(w, r, "static/auth.html")
 }
 
 func outputHTML(w http.ResponseWriter, req *http.Request, filename string) {
