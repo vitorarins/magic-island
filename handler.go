@@ -303,6 +303,7 @@ func (h *handlerImpl) NotHomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if !someoneAtHome {
 		h.requester.RequestFeenstra("arm")
+		h.requester.RequestMaker("EverybodyOut")
 		fmt.Fprintf(w, "Successfuly executed action %s", "arm")
 	} else {
 		fmt.Fprintf(w, "Successfuly marked user as not home")

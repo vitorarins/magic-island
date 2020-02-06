@@ -24,8 +24,13 @@ func (f *fakeRequester) RequestFeenstra(action string) string {
 	return "big xml"
 }
 
-func (f *fakeRequester) RequestMaker(detector, status string) string {
-	log.Printf("RequestMaker was called with detect '%v' and status '%v'", detector, status)
+func (f *fakeRequester) RequestMakerDetector(detector, status string) string {
+	log.Printf("RequestMakerDetector was called with detect '%v' and status '%v'", detector, status)
+	return "maker response"
+}
+
+func (f *fakeRequester) RequestMaker(event string) string {
+	log.Printf("RequestMaker was called with event '%v'", event)
 	return "maker response"
 }
 

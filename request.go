@@ -13,7 +13,8 @@ import (
 
 type Requester interface {
 	RequestFeenstra(action string) string
-	RequestMaker(detector, status string) string
+	RequestMakerDetector(detector, status string) string
+	RequestMaker(event string) string
 }
 
 type requesterImpl struct {
@@ -88,12 +89,28 @@ func (r *requesterImpl) RequestFeenstra(action string) string {
 	return string(body)
 }
 
-func (r *requesterImpl) RequestMaker(detector, status string) string {
+func (r *requesterImpl) RequestMakerDetector(detector, status string) string {
 	url := fmt.Sprintf("%v/%v-%v/with/key/%v", r.MakerUrl, detector, status, r.MakerKey)
 
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Printf("Error executing request for detector '%s' and status '%s': %v", detector, status, err)
+	}
+	defer resp.Body.Close()
+
+	log.Println("response Status:", resp.Status)
+	body, _ := ioutil.ReadAll(resp.Body)
+	log.Println("response Body:", string(body))
+
+	return string(body)
+}
+
+func (r *requesterImpl) RequestMaker(event string) string {
+	url := fmt.Sprintf("%v/%v/with/key/%v", r.MakerUrl, event, r.MakerKey)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Printf("Error executing request for event '%s': %v", event, err)
 	}
 	defer resp.Body.Close()
 

@@ -70,7 +70,7 @@ func ManageDectetorsAlert(storer Storer, requester Requester) {
 
 			if storedDetector.Status != detector.Status {
 				log.Printf("Alerting for detector: %s with current status: %s", detectorSafeName, detector.Status)
-				requester.RequestMaker(detectorSafeName, detector.Status)
+				requester.RequestMakerDetector(detectorSafeName, detector.Status)
 				err = storer.PutDetector(detectorSafeName, detector.Status)
 				if err != nil {
 					log.Printf("Got the following error trying to save detector: %s", err)
