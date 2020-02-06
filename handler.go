@@ -47,7 +47,7 @@ func NewHandler(oauthClientId, oauthClientSecret, domain string, redirectURIs []
 
 	// setup OAuth stuff
 	manager := manage.NewDefaultManager()
-	manager.SetRefreshTokenCfg(&manage.RefreshingConfig{IsGenerateRefresh: true, IsRemoveAccess: false, IsRemoveRefreshing: false})
+	manager.SetRefreshTokenCfg(&manage.RefreshingConfig{IsGenerateRefresh: true, IsRemoveAccess: false, IsRemoveRefreshing: false, IsResetRefreshTime: true})
 	manager.SetValidateURIHandler(func(baseURI string, redirectURI string) (err error) {
 		base, err := url.Parse(baseURI)
 		if err != nil {
