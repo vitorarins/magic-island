@@ -60,6 +60,9 @@ func TestLoginHandler(t *testing.T) {
 		"username": "vitorarins",
 		"password": string(hashedPassword),
 	}
+	if firestoreClient == nil {
+		t.Fatalf("firestore client is nil")
+	}
 	firestoreClient.Collection("users").Doc("vitorarins").Set(ctx, user, firestore.MergeAll)
 
 	req, err := http.NewRequest("GET", "/login", nil)
