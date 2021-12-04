@@ -6,8 +6,6 @@ RUN apt-get update && \
 WORKDIR /go/src/github.com/vitorarins/magic-island/
 RUN openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 -keyout server.key -out server.crt -subj "/C=NL/ST=Noord-Holland/L=Amsterdam/O=Global Security/OU=IT Department/CN=magic-island.vitorarins.com"
 COPY . .
-ENV GO111MODULE=on
-RUN go mod download
 RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -o app .
 
 FROM scratch
