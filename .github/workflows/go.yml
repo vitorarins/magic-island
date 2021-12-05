@@ -23,7 +23,7 @@ jobs:
 
     - name: Test
       env:
-        FIRESTORE_EMULATOR_HOST: 0.0.0.0:8080
+        FIRESTORE_EMULATOR_HOST: 0.0.0.0:8081
       run: go test -v
 
     - name: Build
