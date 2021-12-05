@@ -2,6 +2,7 @@
 ## explicit; go 1.11
 cloud.google.com/go
 cloud.google.com/go/compute/metadata
+cloud.google.com/go/iam
 cloud.google.com/go/internal/btree
 cloud.google.com/go/internal/fields
 cloud.google.com/go/internal/trace
@@ -10,6 +11,9 @@ cloud.google.com/go/internal/version
 ## explicit; go 1.11
 cloud.google.com/go/firestore
 cloud.google.com/go/firestore/apiv1
+# cloud.google.com/go/secretmanager v1.0.0
+## explicit; go 1.16
+cloud.google.com/go/secretmanager/apiv1
 # github.com/alecthomas/kingpin v2.2.6+incompatible
 ## explicit
 github.com/alecthomas/kingpin
@@ -247,10 +251,13 @@ google.golang.org/appengine/urlfetch
 ## explicit; go 1.11
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/api/expr/v1alpha1
+google.golang.org/genproto/googleapis/cloud/secretmanager/v1
 google.golang.org/genproto/googleapis/firestore/v1
+google.golang.org/genproto/googleapis/iam/v1
 google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/errdetails
 google.golang.org/genproto/googleapis/rpc/status
+google.golang.org/genproto/googleapis/type/expr
 google.golang.org/genproto/googleapis/type/latlng
 # google.golang.org/grpc v1.42.0
 ## explicit; go 1.14
@@ -384,6 +391,7 @@ google.golang.org/protobuf/types/descriptorpb
 google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/emptypb
+google.golang.org/protobuf/types/known/fieldmaskpb
 google.golang.org/protobuf/types/known/structpb
 google.golang.org/protobuf/types/known/timestamppb
 google.golang.org/protobuf/types/known/wrapperspb

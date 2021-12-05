@@ -20,6 +20,7 @@ var (
 	// flags
 	port              = kingpin.Flag("port", "The port to be allocated for this http service.").Default("8080").Envar("PORT").String()
 	actionsLocation   = kingpin.Flag("actions-location", "The location where to get data for actions against APIs.").Default("action-data").Envar("ACTIONS_LOCATION").String()
+	secretman         = kingpin.Flag("secretman", "Enable google's secret manager to access config variables.").Envar("SECRETMAN").Bool()
 	feenstraPassCode  = kingpin.Flag("pass-code", "Pass code used for Feenstra system.").Envar("PASS_CODE").Required().String()
 	feenstraKey       = kingpin.Flag("feenstra-key", "Key used for requests against Feenstra sytem.").Envar("FEENSTRA_KEY").Required().String()
 	makerKey          = kingpin.Flag("maker-key", "Key used for requests against IFTT Maker sytem.").Envar("MAKER_KEY").Required().String()
@@ -34,12 +35,27 @@ func main() {
 
 	// parse command line parameters
 	kingpin.Parse()
-	redirectURIList := strings.Split(*redirectURIs, ",")
+
+	flags := make(map[string]*string)
+	flags["PASS_CODE"] = feenstraPassCode
+	flags["FEENSTRA_KEY"] = feenstraKey
+	flags["MAKER_KEY"] = makerKey
+	flags["OAUTH_CLIENT_ID"] = oauthClientId
+	flags["OAUTH_CLIENT_SECRET"] = oauthClientSecret
+	flags["REDIRECT_URIS"] = redirectURIs
+	flags["DOMAIN"] = domain
 
 	// log to stdout and hide timestamp
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 	log.Println("Alarm System is up and running...")
+
+	if *secretman {
+		if err := GetAllVariables(*firestoreProject, flags); err != nil {
+			log.Fatal(err)
+		}
+	}
+	redirectURIList := strings.Split(*redirectURIs, ",")
 
 	// setup firestore client
 	ctx := context.Background()

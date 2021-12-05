@@ -1,0 +1,5 @@
+runtime: go117
+
+env_variables:
+  FIRESTORE_PROJECT_ID: "matrix-varins-1556713043069"
+  SECRETMAN: true

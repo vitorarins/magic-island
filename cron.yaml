@@ -1,0 +1,4 @@
+cron:
+- description: "keep up"
+  url: /status
+  schedule: every 10 mins
