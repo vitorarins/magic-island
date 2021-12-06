@@ -21,14 +21,14 @@ var (
 	port              = kingpin.Flag("port", "The port to be allocated for this http service.").Default("8080").Envar("PORT").String()
 	actionsLocation   = kingpin.Flag("actions-location", "The location where to get data for actions against APIs.").Default("action-data").Envar("ACTIONS_LOCATION").String()
 	secretman         = kingpin.Flag("secretman", "Enable google's secret manager to access config variables.").Envar("SECRETMAN").Bool()
-	feenstraPassCode  = kingpin.Flag("pass-code", "Pass code used for Feenstra system.").Envar("PASS_CODE").Required().String()
-	feenstraKey       = kingpin.Flag("feenstra-key", "Key used for requests against Feenstra sytem.").Envar("FEENSTRA_KEY").Required().String()
-	makerKey          = kingpin.Flag("maker-key", "Key used for requests against IFTT Maker sytem.").Envar("MAKER_KEY").Required().String()
+	feenstraPassCode  = kingpin.Flag("pass-code", "Pass code used for Feenstra system.").Envar("PASS_CODE").String()
+	feenstraKey       = kingpin.Flag("feenstra-key", "Key used for requests against Feenstra sytem.").Envar("FEENSTRA_KEY").String()
+	makerKey          = kingpin.Flag("maker-key", "Key used for requests against IFTT Maker sytem.").Envar("MAKER_KEY").String()
 	firestoreProject  = kingpin.Flag("firestore-project", "Id of GCP project of firestore instance.").Envar("FIRESTORE_PROJECT_ID").Required().String()
-	oauthClientId     = kingpin.Flag("client-id", "Id of Client to do OAuth.").Envar("OAUTH_CLIENT_ID").Required().String()
-	oauthClientSecret = kingpin.Flag("client-secret", "OAuth server client secret.").Envar("OAUTH_CLIENT_SECRET").Required().String()
+	oauthClientId     = kingpin.Flag("client-id", "Id of Client to do OAuth.").Envar("OAUTH_CLIENT_ID").String()
+	oauthClientSecret = kingpin.Flag("client-secret", "OAuth server client secret.").Envar("OAUTH_CLIENT_SECRET").String()
 	redirectURIs      = kingpin.Flag("redirect-uris", "Comma separated list of authorized redirect URIs.").Envar("REDIRECT_URIS").String()
-	domain            = kingpin.Flag("domain", "Domain that this application will serve.").Envar("DOMAIN").Required().String()
+	domain            = kingpin.Flag("domain", "Domain that this application will serve.").Envar("DOMAIN").String()
 )
 
 func main() {
@@ -51,7 +51,11 @@ func main() {
 	log.Println("Alarm System is up and running...")
 
 	if *secretman {
-		if err := GetAllVariables(*firestoreProject, flags); err != nil {
+		secretAccessor, err := NewSecretAccessor(*firestoreProject)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := secretAccessor.GetAllVariables(flags); err != nil {
 			log.Fatal(err)
 		}
 	}
