@@ -1,4 +1,4 @@
-runtime: go117
+runtime: go116
 
 env_variables:
   FIRESTORE_PROJECT_ID: "matrix-varins-1556713043069"

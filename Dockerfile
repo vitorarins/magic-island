@@ -1,4 +1,4 @@
-FROM golang:1.17.4-stretch as builder
+FROM golang:1.16.11-stretch as builder
 RUN apt-get update && \
     apt-get dist-upgrade -y && \
     apt-get install -y --no-install-recommends ca-certificates tzdata openssl && \
