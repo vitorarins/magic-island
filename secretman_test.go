@@ -10,6 +10,7 @@ var fakeAccessSecrets secretAccess = func(name string) (string, error) {
 
 func TestPopulateFlags(t *testing.T) {
 	oldTestString := "old"
+	oldTest := &oldTestString
 	testCases := map[string]struct {
 		input   map[string]*string
 		want    map[string]string
@@ -17,7 +18,7 @@ func TestPopulateFlags(t *testing.T) {
 	}{
 		"success": {
 			input: map[string]*string{
-				"MAKER_KEY": &oldTestString,
+				"MAKER_KEY": oldTest,
 			},
 			want: map[string]string{
 				"MAKER_KEY": "new",
@@ -40,6 +41,10 @@ func TestPopulateFlags(t *testing.T) {
 				if *got != want {
 					t.Errorf("got '%v', wanted '%v'", *got, want)
 				}
+			}
+
+			if *oldTest != "new" {
+				t.Errorf("got '%v', wanted 'new'", *oldTest)
 			}
 		})
 	}

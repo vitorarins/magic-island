@@ -40,13 +40,13 @@ func (sa SecretAccessor) GetAllVariables(flags map[string]*string) error {
 
 func (sa SecretAccessor) PopulateFlags(flags map[string]*string, accessSecrets secretAccess) error {
 	var errs []error
-	for k, _ := range flags {
+	for k, v := range flags {
 		secretName := fmt.Sprintf("projects/%s/secrets/%s/versions/latest", sa.projectName, k)
 		result, err := accessSecrets(secretName)
 		if err != nil {
 			errs = append(errs, err)
 		}
-		flags[k] = &result
+		*v = result
 	}
 	if len(errs) > 0 {
 		return fmt.Errorf("get secrets failed: %v", errs)
