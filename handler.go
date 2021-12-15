@@ -12,15 +12,16 @@ import (
 	"strings"
 
 	"cloud.google.com/go/firestore"
+	"github.com/go-oauth2/oauth2/v4/errors"
+	"github.com/go-oauth2/oauth2/v4/manage"
+	"github.com/go-oauth2/oauth2/v4/models"
+	"github.com/go-oauth2/oauth2/v4/server"
+	"github.com/go-oauth2/oauth2/v4/store"
 	"github.com/go-session/session"
-	"github.com/tslamic/go-oauth2-firestore"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/api/iterator"
-	"gopkg.in/oauth2.v3/errors"
-	"gopkg.in/oauth2.v3/manage"
-	"gopkg.in/oauth2.v3/models"
-	"gopkg.in/oauth2.v3/server"
-	"gopkg.in/oauth2.v3/store"
+
+	"github.com/vitorarins/magic-island/fstore"
 )
 
 type Handler interface {

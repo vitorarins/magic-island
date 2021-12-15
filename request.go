@@ -81,6 +81,7 @@ func (r *requesterImpl) RequestFeenstra(action string) string {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("Error executing request for action %s: %v", action, err)
+		return ""
 	}
 	defer resp.Body.Close()
 
@@ -95,6 +96,7 @@ func (r *requesterImpl) RequestMakerDetector(detector, status string) string {
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Printf("Error executing request for detector '%s' and status '%s': %v", detector, status, err)
+		return ""
 	}
 	defer resp.Body.Close()
 
@@ -111,6 +113,7 @@ func (r *requesterImpl) RequestMaker(event string) string {
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Printf("Error executing request for event '%s': %v", event, err)
+		return ""
 	}
 	defer resp.Body.Close()
 
