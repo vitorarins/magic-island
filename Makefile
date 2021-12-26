@@ -18,9 +18,9 @@ deps:
 	$(RUNGO) go mod vendor
 
 test:
-	-docker stop firestore-emulator
+	-docker stop $(FSCONTAINER)
 	$(RUNFS)
 	$(RUNGO) go test -race -cover ./...
-	-docker stop firestore-emulator
+	-docker stop $(FSCONTAINER)
 
 .PHONY: deps test
