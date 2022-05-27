@@ -380,14 +380,13 @@ func userAuthorizeHandler(w http.ResponseWriter, r *http.Request) (userID string
 	return
 }
 
-func passwordAuthorizeHandlerGenerator(firestoreClient *firestore.Client) func(string, string) (string, error) {
-	return func(username, password string) (userID string, err error) {
+func passwordAuthorizeHandlerGenerator(firestoreClient *firestore.Client) func(context.Context, string, string, string) (string, error) {
+	return func(ctx context.Context, clientID, username, password string) (userID string, err error) {
 		type User struct {
 			Username string `firestore:"username"`
 			Password string `firestore:"password"`
 		}
 		var user User
-		ctx := context.Background()
 		dsnap, err := firestoreClient.Collection("users").Doc(username).Get(ctx)
 		if err != nil {
 			return "", err
