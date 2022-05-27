@@ -16,7 +16,6 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/stretchr/testify v1.7.0
-	github.com/tidwall/btree v1.3.1 // indirect
 	github.com/tidwall/buntdb v1.2.9 // indirect
 	github.com/tidwall/gjson v1.14.1 // indirect
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
