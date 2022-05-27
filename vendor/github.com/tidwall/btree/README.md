@@ -4,6 +4,8 @@
 
 An [efficient](#performance) [B-tree](https://en.wikipedia.org/wiki/B-tree) implementation in Go. 
 
+*Check out the [generics branch](https://github.com/tidwall/btree/tree/generics) if you want to try out btree with generic support for Go 1.18+*
+
 ## Features
 
 - `Copy()` method with copy-on-write support.
@@ -116,10 +118,10 @@ func main() {
 ### Basic
 
 ```
-Len()                   # return the number of items in the btree
-Set(item)               # insert or replace an existing item
 Get(item)               # get an existing item
+Set(item)               # insert or replace an existing item
 Delete(item)            # delete an item
+Len()                   # return the number of items in the btree
 ```
 
 ### Iteration
@@ -127,6 +129,7 @@ Delete(item)            # delete an item
 ```
 Ascend(pivot, iter)     # scan items in ascending order starting at pivot.
 Descend(pivot, iter)    # scan items in descending order starting at pivot.
+Iter()                  # returns a read-only iterator for for-loops.
 ```
 
 ### Queues
