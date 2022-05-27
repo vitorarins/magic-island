@@ -14,6 +14,7 @@ FSIMG=mtlynch/firestore-emulator-docker
 RUNFS=docker run -d --rm --name $(FSCONTAINER) $(RUNFSENVS) $(RUNFSNET) $(FSIMG)
 
 deps:
+	$(RUNGO) go get -u
 	$(RUNGO) go mod tidy
 	$(RUNGO) go mod vendor
 
