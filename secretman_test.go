@@ -35,7 +35,7 @@ func TestPopulateFlags(t *testing.T) {
 				t.Errorf("got '%v', wanted '%v'", err, testCase.wantErr)
 			}
 
-			for k, _ := range testCase.input {
+			for k := range testCase.input {
 				got := testCase.input[k]
 				want := testCase.want[k]
 				if *got != want {

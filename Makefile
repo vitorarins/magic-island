@@ -17,10 +17,17 @@ deps:
 	$(RUNGO) go mod tidy
 	$(RUNGO) go mod vendor
 
+firestore-up:
+	-docker stop $(FSCONTAINER)
+	$(RUNFS)
+
+firestore-down:
+	-docker stop $(FSCONTAINER)
+
 test:
 	-docker stop $(FSCONTAINER)
 	$(RUNFS)
 	$(RUNGO) go test -race -cover ./...
 	-docker stop $(FSCONTAINER)
 
-.PHONY: deps test
+.PHONY: deps test firestore-up firestore-down
