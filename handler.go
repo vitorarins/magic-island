@@ -168,6 +168,7 @@ func (h *handlerImpl) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error starting session store: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
 
@@ -181,11 +182,16 @@ func (h *handlerImpl) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 	if err := store.Save(); err != nil {
 		log.Printf("Error saving session store: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+		return
 	}
 
 	err = h.srv.HandleAuthorizeRequest(w, r)
 	if err != nil {
+		log.Printf("Error handling authorize request: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
+
+		return
 	}
 }
 
@@ -208,6 +214,7 @@ func (h *handlerImpl) IFTTTHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error validating token: %v", err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
+
 		return
 	}
 
@@ -224,6 +231,7 @@ func (h *handlerImpl) IFTTTHandler(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewEncoder(w).Encode(data); err != nil {
 			log.Printf("Error encoding json: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+
 			return
 		}
 	default:
@@ -236,6 +244,7 @@ func (h *handlerImpl) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error starting session store: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
 
@@ -244,6 +253,7 @@ func (h *handlerImpl) LoginHandler(w http.ResponseWriter, r *http.Request) {
 			if err := r.ParseForm(); err != nil {
 				log.Printf("Error parsing form: %v", err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
+
 				return
 			}
 		}
@@ -255,6 +265,7 @@ func (h *handlerImpl) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("Error validating token request: %v", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
+
 			return
 		}
 
@@ -262,10 +273,13 @@ func (h *handlerImpl) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		if err := store.Save(); err != nil {
 			log.Printf("Error saving to store: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+
+			return
 		}
 
 		w.Header().Set("Location", "/auth")
 		w.WriteHeader(http.StatusFound)
+
 		return
 	}
 	outputHTML(w, r, "static/login.html")
@@ -276,12 +290,14 @@ func (h *handlerImpl) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error starting session store: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
 
 	if _, ok := store.Get("LoggedInUserID"); !ok {
 		w.Header().Set("Location", "/login")
 		w.WriteHeader(http.StatusFound)
+
 		return
 	}
 
@@ -293,6 +309,7 @@ func (h *handlerImpl) NotHomeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error validating token: %v", err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
+
 		return
 	}
 
@@ -306,12 +323,14 @@ func (h *handlerImpl) NotHomeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error setting user as not home: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
 	_, err = h.firestoreClient.Collection("users").Doc(userId).Set(ctx, user, firestore.MergeAll)
 	if err != nil {
 		log.Printf("Error setting user as not home: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
 
@@ -325,6 +344,7 @@ func (h *handlerImpl) NotHomeHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("Error retrieving users for nothome: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+
 			return
 		}
 		user := doc.Data()
@@ -351,6 +371,7 @@ func (h *handlerImpl) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error validating token: %v", err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
+
 		return
 	}
 
@@ -364,12 +385,14 @@ func (h *handlerImpl) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error setting user as at home: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
 	_, err = h.firestoreClient.Collection("users").Doc(userId).Set(ctx, user, firestore.MergeAll)
 	if err != nil {
 		log.Printf("Error setting user as at home: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
 	fmt.Fprintf(w, "Successfuly marked user as at home")
@@ -453,7 +476,7 @@ func passwordAuthorizeHandlerGenerator(firestoreClient *firestore.Client) func(s
 func outputHTML(w http.ResponseWriter, req *http.Request, filename string) {
 	file, err := os.Open(filename)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer file.Close()
