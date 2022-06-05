@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/xml"
-	"io/ioutil"
 	"log"
 	"strings"
 	"time"
@@ -34,15 +33,6 @@ func parseDetectors(detectorsXML string) ([]Zone, error) {
 	}
 
 	return envelope.Body.Zones, nil
-}
-
-func writeStatusFile(content, filename string) error {
-	message := []byte(content)
-	err := ioutil.WriteFile(filename, message, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func ManageDectetorsAlert(storer Storer, requester Requester) {

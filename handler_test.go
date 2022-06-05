@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -44,11 +45,22 @@ var (
 	testDomain            = "https://magic.com"
 	testRedirectUrl       = "https://redirect.com/test"
 
-	requester            = &fakeRequester{}
-	ctx                  = context.Background()
-	firestoreClient, err = firestore.NewClient(ctx, "test")
-	handler              = NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
+	requester = &fakeRequester{}
+	ctx       = context.Background()
 )
+
+func setupClient(t *testing.T) *firestore.Client {
+	if value := os.Getenv("FIRESTORE_EMULATOR_HOST"); value == "" {
+		os.Setenv("FIRESTORE_EMULATOR_HOST", "127.0.0.1:8080")
+	}
+
+	firestoreClient, err := firestore.NewClient(ctx, "test")
+	if err != nil {
+		t.Fatalf("Failed to create firestore client: %v", err)
+	}
+
+	return firestoreClient
+}
 
 func TestLoginHandler(t *testing.T) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("test"), 10)
@@ -60,10 +72,15 @@ func TestLoginHandler(t *testing.T) {
 		"username": "vitorarins",
 		"password": string(hashedPassword),
 	}
-	if firestoreClient == nil {
-		t.Fatalf("firestore client is nil")
+
+	firestoreClient := setupClient(t)
+	defer firestoreClient.Close()
+
+	handler := NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
+
+	if _, err := firestoreClient.Collection("users").Doc("vitorarins").Set(ctx, user, firestore.MergeAll); err != nil {
+		t.Fatalf("Failed to set user: %v", err)
 	}
-	firestoreClient.Collection("users").Doc("vitorarins").Set(ctx, user, firestore.MergeAll)
 
 	req, err := http.NewRequest("GET", "/login", nil)
 	if err != nil {
@@ -142,6 +159,11 @@ func TestAuthHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	firestoreClient := setupClient(t)
+	defer firestoreClient.Close()
+
+	handler := NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
+
 	rr := httptest.NewRecorder()
 	server := http.HandlerFunc(handler.AuthHandler)
 	server.ServeHTTP(rr, req)
@@ -185,6 +207,11 @@ func TestAuthorizeHandler(t *testing.T) {
 			TokenURL: "/token",
 		},
 	}
+
+	firestoreClient := setupClient(t)
+	defer firestoreClient.Close()
+
+	handler := NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
 
 	tests := []struct {
 		caseNumber   int
@@ -286,6 +313,13 @@ func TestAuthorizeHandler(t *testing.T) {
 }
 
 func TestTokenHandler(t *testing.T) {
+	firestoreClient, err := firestore.NewClient(ctx, "test")
+	if err != nil {
+		t.Fatalf("Failed to create firestore client: %v", err)
+	}
+
+	handler := NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
+
 	tests := []struct {
 		caseNumber   int
 		clientId     string
@@ -416,6 +450,11 @@ func TestTokenHandler(t *testing.T) {
 }
 
 func TestIndexHandler(t *testing.T) {
+	firestoreClient := setupClient(t)
+	defer firestoreClient.Close()
+
+	handler := NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
+
 	tests := []struct {
 		caseNumber int
 		route      string
@@ -487,6 +526,11 @@ func TestIndexHandler(t *testing.T) {
 }
 
 func TestAlarmHandler(t *testing.T) {
+	firestoreClient := setupClient(t)
+	defer firestoreClient.Close()
+
+	handler := NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
+
 	tests := []struct {
 		route  string
 		status int
@@ -539,6 +583,11 @@ func TestAlarmHandler(t *testing.T) {
 }
 
 func TestStatusHandler(t *testing.T) {
+	firestoreClient := setupClient(t)
+	defer firestoreClient.Close()
+
+	handler := NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
+
 	req, err := http.NewRequest("GET", "/status", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -558,6 +607,13 @@ func TestStatusHandler(t *testing.T) {
 }
 
 func TestIFTTTHandler(t *testing.T) {
+	firestoreClient, err := firestore.NewClient(ctx, "test")
+	if err != nil {
+		t.Fatalf("Failed to create firestore client: %v", err)
+	}
+
+	handler := NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
+
 	req, err := http.NewRequest("GET", "/ifttt/v1/user/info", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -604,6 +660,11 @@ func TestIFTTTHandler(t *testing.T) {
 }
 
 func TestNotHomeHandler(t *testing.T) {
+	firestoreClient := setupClient(t)
+	defer firestoreClient.Close()
+
+	handler := NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
+
 	tests := []struct {
 		caseNumber int
 		route      string
@@ -624,7 +685,7 @@ func TestNotHomeHandler(t *testing.T) {
 			status:     http.StatusOK,
 			body:       "Successfuly executed action arm",
 			users: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"username": "vitorarins",
 				},
 			},
@@ -635,7 +696,7 @@ func TestNotHomeHandler(t *testing.T) {
 			status:     http.StatusOK,
 			body:       "Successfuly executed action arm",
 			users: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"username": "vitorarins",
 					"home":     false,
 				},
@@ -647,7 +708,7 @@ func TestNotHomeHandler(t *testing.T) {
 			status:     http.StatusOK,
 			body:       "Successfuly executed action arm",
 			users: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"username": "vitorarins",
 					"home":     true,
 				},
@@ -659,11 +720,11 @@ func TestNotHomeHandler(t *testing.T) {
 			status:     http.StatusOK,
 			body:       "Successfuly marked user as not home",
 			users: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"username": "vitorarins",
 					"home":     true,
 				},
-				map[string]interface{}{
+				{
 					"username": "testuser",
 					"home":     true,
 				},
@@ -675,11 +736,11 @@ func TestNotHomeHandler(t *testing.T) {
 			status:     http.StatusOK,
 			body:       "Successfuly executed action arm",
 			users: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"username": "vitorarins",
 					"home":     true,
 				},
-				map[string]interface{}{
+				{
 					"username": "testuser",
 					"home":     false,
 				},
@@ -691,11 +752,11 @@ func TestNotHomeHandler(t *testing.T) {
 			status:     http.StatusOK,
 			body:       "Successfuly marked user as not home",
 			users: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"username": "vitorarins",
 					"home":     true,
 				},
-				map[string]interface{}{
+				{
 					"username": "testuser",
 				},
 			},
@@ -703,9 +764,13 @@ func TestNotHomeHandler(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		deleteCollection(ctx, firestoreClient, firestoreClient.Collection("users"), 10)
+		if err := deleteCollection(ctx, firestoreClient, firestoreClient.Collection("users"), 10); err != nil {
+			t.Fatalf("Failed to delete collection 'users': %v", err)
+		}
 		for _, user := range test.users {
-			firestoreClient.Collection("users").Doc(user["username"].(string)).Set(ctx, user, firestore.MergeAll)
+			if _, err := firestoreClient.Collection("users").Doc(user["username"].(string)).Set(ctx, user, firestore.MergeAll); err != nil {
+				t.Fatalf("Failed to set user: %v", err)
+			}
 		}
 
 		req, err := http.NewRequest("GET", test.route, nil)
@@ -732,6 +797,11 @@ func TestNotHomeHandler(t *testing.T) {
 }
 
 func TestHomeHandler(t *testing.T) {
+	firestoreClient := setupClient(t)
+	defer firestoreClient.Close()
+
+	handler := NewHandler(testOauthClientId, testOauthClientSecret, testDomain, []string{testRedirectUrl}, requester, firestoreClient)
+
 	tests := []struct {
 		caseNumber int
 		route      string
@@ -752,7 +822,7 @@ func TestHomeHandler(t *testing.T) {
 			status:     http.StatusOK,
 			body:       "Successfuly marked user as at home",
 			users: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"username": "vitorarins",
 				},
 			},
@@ -763,7 +833,7 @@ func TestHomeHandler(t *testing.T) {
 			status:     http.StatusOK,
 			body:       "Successfuly marked user as at home",
 			users: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"username": "vitorarins",
 					"home":     false,
 				},
@@ -775,7 +845,7 @@ func TestHomeHandler(t *testing.T) {
 			status:     http.StatusOK,
 			body:       "Successfuly marked user as at home",
 			users: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"username": "vitorarins",
 					"home":     true,
 				},
@@ -787,11 +857,11 @@ func TestHomeHandler(t *testing.T) {
 			status:     http.StatusOK,
 			body:       "Successfuly marked user as at home",
 			users: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"username": "vitorarins",
 					"home":     true,
 				},
-				map[string]interface{}{
+				{
 					"username": "testuser",
 					"home":     true,
 				},
@@ -803,11 +873,11 @@ func TestHomeHandler(t *testing.T) {
 			status:     http.StatusOK,
 			body:       "Successfuly marked user as at home",
 			users: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"username": "vitorarins",
 					"home":     true,
 				},
-				map[string]interface{}{
+				{
 					"username": "testuser",
 					"home":     false,
 				},
@@ -819,11 +889,11 @@ func TestHomeHandler(t *testing.T) {
 			status:     http.StatusOK,
 			body:       "Successfuly marked user as at home",
 			users: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"username": "vitorarins",
 					"home":     true,
 				},
-				map[string]interface{}{
+				{
 					"username": "testuser",
 				},
 			},
@@ -831,9 +901,14 @@ func TestHomeHandler(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		deleteCollection(ctx, firestoreClient, firestoreClient.Collection("users"), 10)
+		if err := deleteCollection(ctx, firestoreClient, firestoreClient.Collection("users"), 10); err != nil {
+			t.Fatalf("Failed to delete collection 'users': %v", err)
+		}
+
 		for _, user := range test.users {
-			firestoreClient.Collection("users").Doc(user["username"].(string)).Set(ctx, user, firestore.MergeAll)
+			if _, err := firestoreClient.Collection("users").Doc(user["username"].(string)).Set(ctx, user, firestore.MergeAll); err != nil {
+				t.Fatalf("Failed to set user: %v", err)
+			}
 		}
 
 		req, err := http.NewRequest("GET", test.route, nil)

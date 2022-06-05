@@ -1,10 +1,11 @@
 package main
 
 import (
-	"cloud.google.com/go/firestore"
 	"context"
 	"fmt"
 	"log"
+
+	"cloud.google.com/go/firestore"
 )
 
 type Detector struct {
@@ -68,7 +69,9 @@ func (s *storerImpl) GetDetector(name string) (d *Detector, err error) {
 		if err != nil {
 			return nil, err
 		}
-		dsnap.DataTo(&detector)
+		if err := dsnap.DataTo(&detector); err != nil {
+			return nil, err
+		}
 		d = &detector
 		s.detectors[name] = d
 	}

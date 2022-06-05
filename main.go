@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"runtime"
 	"strings"
 
 	"cloud.google.com/go/firestore"
@@ -14,8 +13,6 @@ import (
 )
 
 var (
-	buildDate string
-	goVersion = runtime.Version()
 
 	// flags
 	port              = kingpin.Flag("port", "The port to be allocated for this http service.").Default("8080").Envar("PORT").String()
