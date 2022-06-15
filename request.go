@@ -85,7 +85,11 @@ func (r *requesterImpl) RequestFeenstra(action string) string {
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error reading response body: %v", err)
+		return ""
+	}
 
 	return string(body)
 }
